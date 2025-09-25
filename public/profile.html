@@ -200,8 +200,26 @@
     </div>
 
     <script type="module">
-        // Import Firebase
-        import { auth, onAuthStateChanged, db, collection, query, getDocs, limit } from "./js/firebase.js";
+        // Import Firebase directly from CDN
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, query, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHqhU5fDxG-GW2hfUVrcHCCxBzPdHd5-M",
+            authDomain: "unhinged-8c6da.firebaseapp.com",
+            projectId: "unhinged-8c6da",
+            storageBucket: "unhinged-8c6da.appspot.com",
+            messagingSenderId: "248472796860",
+            appId: "1:248472796860:web:9d8d043e7fb051acf5dab9",
+            measurementId: "G-6BC5YCV33Q"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
         
         let currentUser = null;
         let currentDeck = [];
