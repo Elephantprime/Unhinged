@@ -246,6 +246,13 @@ function closeLiveStreamChat() {
   }
 }
 
+// Expose chat control functions to global scope for inline onclick handlers
+Object.assign(window, {
+  minimizeLiveStreamChat,
+  maximizeLiveStreamChat,
+  closeLiveStreamChat
+});
+
 async function initializeAuth() {
   console.log('🔐 Initializing authentication...');
   
