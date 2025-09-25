@@ -36,15 +36,15 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from public directory with cache control for JS files
+// Serve static files from public directory with AGGRESSIVE cache busting
 app.use(express.static('public', {
   setHeaders: (res, path, stat) => {
-    // Disable caching for JavaScript files to ensure avatar fixes load
-    if (path.endsWith('.js')) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    }
+    // AGGRESSIVE cache busting for ALL files to force browser refresh
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Last-Modified', new Date().toUTCString());
+    res.setHeader('ETag', Date.now().toString());
   }
 }));
 
