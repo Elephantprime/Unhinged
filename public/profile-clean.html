@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Profile</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+</head>
+<body>
+  <div id="profileCard">
+    <img id="profilePhoto" alt="Profile Photo" />
+    <h2 id="profileName"></h2>
+    <p id="profileAge"></p>
+  </div>
+
+  <div id="controls">
+    <button id="xBtn">❌</button>
+    <button id="heartBtn">❤️</button>
+    <button id="recycleBtn">♻️ Recycle</button>
+  </div>
+
+  <div id="chatWindow" style="display:none;">
+    <div id="messages"></div>
+    <input id="messageInput" placeholder="Type a message..." />
+    <button id="sendMsgBtn">Send</button>
+  </div>
+
+  <script type="module">
+    import { auth, onAuthStateChanged, db, collection, orderBy, onSnapshot, query } from "./js/firebase.js";
+    import { likeUser, dislikeUser, recycleAll, sendMessage } from "./js/matching.js";
+
+    // TODO: replace with your real loader
+    let currentProfile = { uid: "targetUser123", displayName: "Test User", age: 25, photoURL: "" };
+    let activeChatId = null;
+
+    function renderProfile(p) {
+      document.getElementById("profilePhoto").src = p.photoURL || "";
+      document.getElementById("profileName").textContent = p.displayName || "Unknown";
+      document.getElementById("profileAge").textContent = p.age || "";
+      currentProfile = p;
+    }
+
+    document.getElementById("heartBtn").addEventListener("click", async () => {
+      await likeUser(auth.currentUser.uid, currentProfile.uid);
+      console.log("❤️ LIKED:", currentProfile.displayName);
+      // optional: advance to next profile
+    });
+
+    document.getElementById("xBtn").addEventListener("click", async () => {
+      await dislikeUser(auth.currentUser.uid, currentProfile.uid);
+      console.log("❌ DISLIKED:", currentProfile.displayName);
+      // optional: advance to next profile
+    });
+
+    document.getElementById("recycleBtn").addEventListener("click", async () => {
+      const recycled = await recycleAll(auth.currentUser.uid);
+      console.log("♻️ Recycled back:", recycled);
+      // TODO: add recycled back to your queue
+    });
+
+    document.getElementById("sendMsgBtn").addEventListener("click", async () => {
+      if (!activeChatId) return;
+      const val = document.getElementById("messageInput").value.trim();
+      if (!val) return;
+      await sendMessage(activeChatId, auth.currentUser.uid, val);
+      document.getElementById("messageInput").value = "";
+    });
+
+    function watchChat(chatId) {
+      activeChatId = chatId;
+      const q = query(collection(db, "chats", chatId, "messages"), orderBy("createdAt", "asc"));
+      onSnapshot(q, snap => {
+        const box = document.getElementById("messages");
+        box.innerHTML = "";
+        snap.forEach(doc => {
+          const d = doc.data();
+          const line = document.createElement("div");
+          line.textContent = `${d.from}: ${d.text}`;
+          box.appendChild(line);
+        });
+      });
+      document.getElementById("chatWindow").style.display = "block";
+    }
+
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        location.href = "./login.html";
+        return;
+      }
+      renderProfile(currentProfile);
+      // If you detect a match, call watchChat([uid1,uid2].sort().join("_"))
+    });
+  </script>
+</body>
+</html>

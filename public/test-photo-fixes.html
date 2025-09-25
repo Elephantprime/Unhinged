@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Fixes Verification Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0b0b0f;
+            color: #fff;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #181a22;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #2a2a2a;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #12131a;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+        }
+        .test-button {
+            background: #E11D2A;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #c4171f;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #0b0b0f;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success { border-left: 3px solid #4CAF50; }
+        .error { border-left: 3px solid #f44336; }
+        .info { border-left: 3px solid #2196F3; }
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.pass { background: #4CAF50; }
+        .status.fail { background: #f44336; }
+        .status.pending { background: #ff9800; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Photo Fixes Verification Test</h1>
+        <p>This page tests the hasPhotos flag synchronization fixes and photo rendering system.</p>
+        
+        <div class="test-section">
+            <h3>📊 Current User Photo Status</h3>
+            <button class="test-button" onclick="testCurrentUserStatus()">Check Current User Status</button>
+            <div id="currentUserResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Fix Current User hasPhotos Flag</h3>
+            <button class="test-button" onclick="fixCurrentUserFlag()">Fix Current User hasPhotos Flag</button>
+            <div id="fixUserResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Test calculateHasPhotos Function</h3>
+            <button class="test-button" onclick="testCalculateFunction()">Test Calculate Function</button>
+            <div id="calculateResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Test Photo Validation Logic</h3>
+            <button class="test-button" onclick="testPhotoValidation()">Test Photo Validation</button>
+            <div id="validationResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 Complete System Test</h3>
+            <button class="test-button" onclick="runCompleteTest()">Run Complete System Test</button>
+            <div id="completeTestResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📱 Console Debugging Commands</h3>
+            <p>These commands are available in the browser console:</p>
+            <code>
+• window.PhotoDebug.getCurrentUserPhotoStatus()
+• window.PhotoDebug.fixCurrentUserPhotoFlag()
+• window.PhotoDebug.checkUserPhotoStatus(uid)
+• window.PhotoDebug.calculateHasPhotos(photoURL, photos)
+            </code>
+        </div>
+    </div>
+
+    <script type="module">
+        import { 
+            auth, 
+            calculateHasPhotos, 
+            fixUserHasPhotosFlag, 
+            debugUserPhotoStatus,
+            waitForAuth,
+            getUserDoc 
+        } from './js/firebase.js';
+
+        // Wait for auth to be ready
+        await waitForAuth();
+
+        window.testCurrentUserStatus = async function() {
+            const result = document.getElementById('currentUserResult');
+            result.innerHTML = 'Testing current user photo status...';
+            
+            try {
+                if (!auth.currentUser) {
+                    result.className = 'result error';
+                    result.innerHTML = '❌ No authenticated user. Please log in first.';
+                    return;
+                }
+
+                const status = await debugUserPhotoStatus(auth.currentUser.uid);
+                if (status) {
+                    const statusText = status.isConsistent ? 
+                        '<span class="status pass">PASS</span>' : 
+                        '<span class="status fail">FAIL</span>';
+                    
+                    result.className = status.isConsistent ? 'result success' : 'result error';
+                    result.innerHTML = `${statusText} Photo Status Check:
+
+User: ${status.displayName} (${status.uid})
+PhotoURL: ${status.photoURL || 'empty'}
+Photos Array: ${status.photosCount} items
+hasPhotos (stored): ${status.hasPhotos}
+hasPhotos (calculated): ${status.calculatedHasPhotos}
+Consistent: ${status.isConsistent ? 'YES' : 'NO'}
+Needs Fix: ${status.needsFix ? 'YES' : 'NO'}`;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = '❌ Failed to get user photo status';
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `❌ Error: ${error.message}`;
+            }
+        };
+
+        window.fixCurrentUserFlag = async function() {
+            const result = document.getElementById('fixUserResult');
+            result.innerHTML = 'Fixing current user hasPhotos flag...';
+            
+            try {
+                if (!auth.currentUser) {
+                    result.className = 'result error';
+                    result.innerHTML = '❌ No authenticated user. Please log in first.';
+                    return;
+                }
+
+                const fixed = await fixUserHasPhotosFlag(auth.currentUser.uid);
+                const statusText = fixed ? 
+                    '<span class="status pass">FIXED</span>' : 
+                    '<span class="status pass">ALREADY CORRECT</span>';
+                
+                result.className = 'result success';
+                result.innerHTML = `${statusText} hasPhotos flag update:
+
+Result: ${fixed ? 'Flag was corrected' : 'Flag was already correct'}
+User: ${auth.currentUser.uid}`;
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `❌ Error: ${error.message}`;
+            }
+        };
+
+        window.testCalculateFunction = function() {
+            const result = document.getElementById('calculateResult');
+            result.className = 'result info';
+            
+            // Test cases for calculateHasPhotos function
+            const testCases = [
+                {
+                    photoURL: '',
+                    photos: [],
+                    expected: false,
+                    description: 'Empty photoURL and photos array'
+                },
+                {
+                    photoURL: 'https://firebasestorage.googleapis.com/test.jpg',
+                    photos: [],
+                    expected: true,
+                    description: 'Valid photoURL, empty photos array'
+                },
+                {
+                    photoURL: '',
+                    photos: ['https://firebasestorage.googleapis.com/test.jpg'],
+                    expected: true,
+                    description: 'Empty photoURL, valid photos array'
+                },
+                {
+                    photoURL: null,
+                    photos: ['', 'undefined', null],
+                    expected: false,
+                    description: 'Null/empty values only'
+                },
+                {
+                    photoURL: 'https://firebasestorage.googleapis.com/test.jpg',
+                    photos: ['https://firebasestorage.googleapis.com/test2.jpg'],
+                    expected: true,
+                    description: 'Both photoURL and photos have valid values'
+                }
+            ];
+
+            let results = '<span class="status pass">CALCULATE FUNCTION TESTS</span>\n\n';
+            let allPassed = true;
+
+            testCases.forEach((testCase, index) => {
+                const actual = calculateHasPhotos(testCase.photoURL, testCase.photos);
+                const passed = actual === testCase.expected;
+                allPassed = allPassed && passed;
+                
+                const status = passed ? '✅ PASS' : '❌ FAIL';
+                results += `${status} Test ${index + 1}: ${testCase.description}
+  Expected: ${testCase.expected}
+  Actual: ${actual}
+  
+`;
+            });
+
+            const overallStatus = allPassed ? 
+                '<span class="status pass">ALL TESTS PASSED</span>' : 
+                '<span class="status fail">SOME TESTS FAILED</span>';
+            
+            result.innerHTML = `${overallStatus}\n\n${results}`;
+        };
+
+        window.testPhotoValidation = function() {
+            const result = document.getElementById('validationResult');
+            result.className = 'result info';
+            
+            let output = '<span class="status pending">PHOTO VALIDATION TESTS</span>\n\n';
+            
+            // Test PhotoUtils functions if available
+            if (window.PhotoUtils) {
+                output += '✅ PhotoUtils is available\n';
+                
+                const testUrls = [
+                    'https://firebasestorage.googleapis.com/test.jpg',
+                    'data:image/svg+xml;base64,PHN2Zz4=',
+                    '',
+                    null,
+                    'https://example.com/image.jpg'
+                ];
+                
+                testUrls.forEach(url => {
+                    if (window.PhotoUtils.isLegitimateProfilePhoto) {
+                        const isLegit = window.PhotoUtils.isLegitimateProfilePhoto(url);
+                        output += `  URL: ${url || 'empty'} → Legitimate: ${isLegit}\n`;
+                    }
+                });
+            } else {
+                output += '⚠️ PhotoUtils not available\n';
+            }
+            
+            result.innerHTML = output;
+        };
+
+        window.runCompleteTest = async function() {
+            const result = document.getElementById('completeTestResult');
+            result.innerHTML = 'Running complete system test...';
+            
+            try {
+                let output = '<span class="status pending">COMPLETE SYSTEM TEST</span>\n\n';
+                let allTestsPassed = true;
+                
+                // Test 1: Authentication
+                if (auth.currentUser) {
+                    output += '✅ User authenticated\n';
+                } else {
+                    output += '❌ No authenticated user\n';
+                    allTestsPassed = false;
+                }
+                
+                // Test 2: Firebase functions available
+                if (typeof calculateHasPhotos === 'function') {
+                    output += '✅ calculateHasPhotos function available\n';
+                } else {
+                    output += '❌ calculateHasPhotos function not available\n';
+                    allTestsPassed = false;
+                }
+                
+                // Test 3: Photo debug utilities
+                if (window.PhotoDebug) {
+                    output += '✅ PhotoDebug utilities available\n';
+                } else {
+                    output += '❌ PhotoDebug utilities not available\n';
+                    allTestsPassed = false;
+                }
+                
+                // Test 4: Current user photo status (if authenticated)
+                if (auth.currentUser) {
+                    const status = await debugUserPhotoStatus(auth.currentUser.uid);
+                    if (status) {
+                        output += `✅ User photo status retrieved\n`;
+                        output += `  → hasPhotos consistent: ${status.isConsistent}\n`;
+                        if (!status.isConsistent) {
+                            output += `  → Fixing flag automatically...\n`;
+                            const fixed = await fixUserHasPhotosFlag(auth.currentUser.uid);
+                            output += `  → Fix result: ${fixed ? 'FIXED' : 'ALREADY CORRECT'}\n`;
+                        }
+                    } else {
+                        output += '❌ Failed to retrieve user photo status\n';
+                        allTestsPassed = false;
+                    }
+                }
+                
+                const finalStatus = allTestsPassed ? 
+                    '<span class="status pass">ALL SYSTEMS WORKING</span>' : 
+                    '<span class="status fail">SOME ISSUES FOUND</span>';
+                
+                result.className = allTestsPassed ? 'result success' : 'result error';
+                result.innerHTML = `${finalStatus}\n\n${output}`;
+                
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `❌ Test failed with error: ${error.message}`;
+            }
+        };
+
+        // Auto-run basic status check when page loads
+        setTimeout(() => {
+            if (auth.currentUser) {
+                console.log('🔧 Photo fixes test page loaded. Running automatic status check...');
+                window.testCurrentUserStatus();
+            } else {
+                console.log('🔧 Photo fixes test page loaded. Please log in to test photo functionality.');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

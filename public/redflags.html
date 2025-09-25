@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNHINGED — Red Flags</title>
+<style>
+  :root{--red:#E11D2A}
+  *{box-sizing:border-box} body{margin:0;background:#0f0f12;color:#fff;font:500 16px/1.55 Inter,system-ui}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .top{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+  .pill{padding:8px 12px;background:#1a1b22;border:1px solid rgba(255,255,255,.08);border-radius:999px}
+  h1{margin:6px 0 2px;font-size:28px;font-weight:900}
+  .sub{color:#cfd0de;margin-bottom:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  .card{background:#15161b;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px}
+  .title{font-weight:900;margin:0 0 4px}
+  .desc{color:#cfd0de;font-size:14px}
+  .level{margin-top:8px;font-size:12px;padding:4px 8px;border-radius:999px;background:#23242e;border:1px solid rgba(255,255,255,.08)}
+  .scale{height:8px;background:#1d1f27;border:1px solid #2a2d36;border-radius:999px;overflow:hidden;margin-top:8px}
+  .fill{height:100%;background:linear-gradient(90deg,#ffb54d,#ff2a2a)}
+</style>
+<script type="module">
+  import { auth, db } from "./js/firebase.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  function checkProfileComplete(userData) {
+    if (!userData) return false;
+    return (userData.displayName || userData.username || '').trim() !== '' &&
+           (userData.age || 0) >= 18 &&
+           (userData.location || '').trim() !== '' &&
+           (userData.photoURL || '').trim() !== '';
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = './login.html';
+      return;
+    }
+
+    try {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const userData = userDoc.exists() ? userDoc.data() : null;
+
+      if (!checkProfileComplete(userData)) {
+        alert('Please complete your profile before accessing red flags.');
+        window.location.href = './profile.html';
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking profile:', error);
+      window.location.href = './profile.html';
+    }
+  });
+</script></head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="pill" href="index.html">← Home</a>
+    <a class="pill" href="badges.html">🏅 Badges</a>
+    <a class="pill" href="chaos.html">🧷 Chaos Board</a>
+  </div>
+
+  <h1>Red Flag Catalog</h1>
+  <div class="sub">These are the common 🚩 we track. Scores influence your visible “Chaos” meter. Reduce them by consistent behavior over time.</div>
+
+  <div class="grid">
+    <div class="card"><div class="title">Chronic Ghosting</div><div class="desc">Frequently stops replying without explanation.</div><div class="level">Severity: High</div><div class="scale"><div class="fill" style="width:86%"></div></div></div>
+    <div class="card"><div class="title">Breadcrumbing</div><div class="desc">Sends sporadic, non‑committal pings to keep interest without intent.</div><div class="level">Severity: Med</div><div class="scale"><div class="fill" style="width:64%"></div></div></div>
+    <div class="card"><div class="title">Overlap Olympics</div><div class="desc">Dates multiple people with misleading communication about exclusivity.</div><div class="level">Severity: High</div><div class="scale"><div class="fill" style="width:80%"></div></div></div>
+    <div class="card"><div class="title">Plan Flaker</div><div class="desc">Cancels last minute or often “forgets”.</div><div class="level">Severity: Med</div><div class="scale"><div class="fill" style="width:58%"></div></div></div>
+    <div class="card"><div class="title">Ex Orbiting</div><div class="desc">Maintains confusing, on‑again/off‑again contact with exes.</div><div class="level">Severity: Med‑High</div><div class="scale"><div class="fill" style="width:72%"></div></div></div>
+    <div class="card"><div class="title">Love‑Bomb & Fade</div><div class="desc">Intense early affection that quickly drops off.</div><div class="level">Severity: High</div><div class="scale"><div class="fill" style="width:78%"></div></div></div>
+    <div class="card"><div class="title">Scheduling Black Hole</div><div class="desc">Needs 10+ prompts to settle on time/place.</div><div class="level">Severity: Low‑Med</div><div class="scale"><div class="fill" style="width:44%"></div></div></div>
+    <div class="card"><div class="title">Phone at Dinner</div><div class="desc">Constant phone use during dates.</div><div class="level">Severity: Low</div><div class="scale"><div class="fill" style="width:28%"></div></div></div>
+    <div class="card"><div class="title">Financial Chaos</div><div class="desc">Perpetually “forgetting” wallet or dodging fair splits.</div><div class="level">Severity: Med</div><div class="scale"><div class="fill" style="width:60%"></div></div></div>
+    <div class="card"><div class="title">Label Allergic</div><div class="desc">Avoids clarity about intentions for long periods.</div><div class="level">Severity: Med</div><div class="scale"><div class="fill" style="width:56%"></div></div></div>
+    <div class="card"><div class="title">Serial Late</div><div class="desc">>15 minutes late repeatedly.</div><div class="level">Severity: Low‑Med</div><div class="scale"><div class="fill" style="width:40%"></div></div></div>
+    <div class="card"><div class="title">Photo Catfish</div><div class="desc">Photos do not match present appearance.</div><div class="level">Severity: High</div><div class="scale"><div class="fill" style="width:82%"></div></div></div>
+    <div class="card"><div class="title">DM Performer</div><div class="desc">Treats dates as content opportunities first.</div><div class="level">Severity: Med</div><div class="scale"><div class="fill" style="width:55%"></div></div></div>
+    <div class="card"><div class="title">Boundary Blur</div><div class="desc">Ignores or pressures past stated boundaries.</div><div class="level">Severity: Very High</div><div class="scale"><div class="fill" style="width:92%"></div></div></div>
+    <div class="card"><div class="title">Situationship Stretch</div><div class="desc">Keeps “undefined” for months while acting exclusive.</div><div class="level">Severity: Med‑High</div><div class="scale"><div class="fill" style="width:70%"></div></div></div>
+    <div class="card"><div class="title">Always On Read</div><div class="desc">Views messages quickly, replies days later.</div><div class="level">Severity: Low‑Med</div><div class="scale"><div class="fill" style="width:46%"></div></div></div>
+    <div class="card"><div class="title">First‑Date Interviewer</div><div class="desc">Turns dates into interrogations; no reciprocity.</div><div class="level">Severity: Low</div><div class="scale"><div class="fill" style="width:30%"></div></div></div>
+    <div class="card"><div class="title">Addicted to Chaos</div><div class="desc">Chooses drama even when calm is offered.</div><div class="level">Severity: High</div><div class="scale"><div class="fill" style="width:84%"></div></div></div>
+    <div class="card"><div class="title">Flex First</div><div class="desc">Money/clout flexing dominates interaction.</div><div class="level">Severity: Med</div><div class="scale"><div class="fill" style="width:58%"></div></div></div>
+    <div class="card"><div class="title">Bio Lies</div><div class="desc">Misstates age, kids, job, or living situation.</div><div class="level">Severity: Very High</div><div class="scale"><div class="fill" style="width:95%"></div></div></div>
+    <div class="card"><div class="title">Vanishing Weekend</div><div class="desc">Predictably disappears Fri–Sun with no heads‑up.</div><div class="level">Severity: Med</div><div class="scale"><div class="fill" style="width:62%"></div></div></div>
+    <div class="card"><div class="title">Zero Plan Energy</div><div class="desc">Insists “you pick” every time; never suggests.</div><div class="level">Severity: Low</div><div class="scale"><div class="fill" style="width:26%"></div></div></div>
+    <div class="card"><div class="title">Takes, Doesn’t Thank</div><div class="desc">Fails to acknowledge effort or generosity.</div><div class="level">Severity: Low‑Med</div><div class="scale"><div class="fill" style="width:42%"></div></div></div>
+    <div class="card"><div class="title">Gaslight Lite™</div><div class="desc">Subtle reality‑twisting to avoid accountability.</div><div class="level">Severity: High</div><div class="scale"><div class="fill" style="width:88%"></div></div></div>
+  </div>
+</div>
+</body></html>

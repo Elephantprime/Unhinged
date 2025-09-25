@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- ===== SECTION: Head / Meta ===== -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unhinged — Log In</title>
+
+  <!-- ===== SECTION: Styles (Design System) ===== -->
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root { --bg:#0e0e12; --panel:#15161b; --muted:#cfd0de; --red:#E11D2A; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center}
+    a{color:#9ecbff;text-decoration:none}
+    .wrap{width:100%;max-width:480px;padding:16px}
+    .card{background:var(--panel);border:1px solid #2a2a2a;border-radius:14px;padding:18px}
+    .brand{font-weight:800;margin-bottom:6px}
+    .muted{color:var(--muted);font-size:.95rem;margin-bottom:12px}
+    label{display:block;margin:.35rem 0 .25rem}
+    input[type="email"],input[type="password"]{
+      width:100%;padding:12px;border-radius:10px;border:1px solid #2a2a2a;background:#12131a;color:#fff
+    }
+    .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+    /* Modern buttons now loaded from style.css */
+    .status{margin-top:10px;font-size:.95rem}
+    .ok{color:#9ae6b4}.err{color:#ff8e8e}.prog{color:#ffd27f}
+    .foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+    
+    /* ===== FORGOT PASSWORD MODAL STYLES ===== */
+    .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal-overlay.active{display:flex}
+    .modal{background:var(--panel);border:1px solid #2a2a2a;border-radius:14px;padding:24px;width:90%;max-width:440px;position:relative}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .modal-title{font-size:20px;font-weight:700;color:#fff}
+    .close-btn{background:none;border:none;color:#cfd0de;font-size:24px;cursor:pointer;padding:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+    .close-btn:hover{color:#fff}
+    .modal-subtitle{color:var(--muted);font-size:.95rem;margin-bottom:20px;line-height:1.4}
+    .modal-input{width:100%;padding:12px;border-radius:10px;border:1px solid #2a2a2a;background:#12131a;color:#fff;margin-bottom:16px}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+    .modal-status{margin-top:12px;font-size:.95rem}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="brand">Welcome back</div>
+      <div class="muted">Sign in to continue.</div>
+
+      <!-- ===== SECTION: Form ===== -->
+      <form id="loginForm">
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="email" required />
+
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required />
+
+        <div class="row" style="margin-top:6px">
+          <a id="forgot" href="#" data-testid="link-forgot-password" title="Reset password">🔒 Forgot password?</a>
+          <div></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn secondary" type="button" onclick="location.href='./index.html'">Cancel</button>
+          <button class="btn" id="loginBtn" type="submit">Sign In</button>
+        </div>
+      </form>
+
+      <div class="status" id="status"></div>
+
+      <div class="foot">
+        <span class="muted">No account?</span>
+        <a href="./signup.html">Create one</a>
+      </div>
+
+      <!-- ===== SECTION: Support Donations ===== -->
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid #2a2a2a;">
+        <div style="text-align:center;margin-bottom:12px;">
+          <div style="font-size:14px;color:var(--muted);margin-bottom:6px;">💝 Support Unhinged Development</div>
+          <div style="font-size:12px;color:#888;">Help us keep the platform running and add new features</div>
+        </div>
+        
+        <div class="donation-buttons" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+          <button class="btn secondary donation-btn" data-amount="5" style="font-size:13px;padding:8px 12px;">$5 ☕</button>
+          <button class="btn secondary donation-btn" data-amount="15" style="font-size:13px;padding:8px 12px;">$15 🍕</button>
+          <button class="btn secondary donation-btn" data-amount="25" style="font-size:13px;padding:8px 12px;">$25 🎉</button>
+        </div>
+        
+        <button class="btn donation-btn" data-amount="50" style="width:100%;font-size:13px;padding:8px 12px;background:linear-gradient(135deg,#ff6b9d,#e11d2a);">
+          💖 Developer Contribution - $50
+        </button>
+        
+        <div id="donationStatus" style="margin-top:8px;font-size:12px;text-align:center;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FORGOT PASSWORD MODAL ===== -->
+  <div class="modal-overlay" id="forgotModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Reset Your Password</h2>
+        <button class="close-btn" id="closeModal" data-testid="button-close-modal">&times;</button>
+      </div>
+      
+      <div class="modal-subtitle">
+        Enter your email address and we'll send you a secure link to reset your password.
+      </div>
+      
+      <form id="forgotPasswordForm">
+        <label for="resetEmail">Email Address</label>
+        <input 
+          id="resetEmail" 
+          type="email" 
+          class="modal-input" 
+          placeholder="Enter your email address"
+          autocomplete="email" 
+          required 
+          data-testid="input-reset-email"
+        />
+        
+        <div class="modal-actions">
+          <button class="btn secondary" type="button" id="cancelReset" data-testid="button-cancel-reset">Cancel</button>
+          <button class="btn" type="submit" id="sendResetBtn" data-testid="button-send-reset">📧 Send Reset Link</button>
+        </div>
+      </form>
+      
+      <div class="modal-status" id="resetStatus"></div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION: Scripts ===== -->
+  <script type="module">
+    /* ===== SECTION: Imports ===== */
+    import { auth } from "./js/firebase.js";
+    import {
+      onAuthStateChanged,
+      signInWithEmailAndPassword,
+      sendPasswordResetEmail,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    /* ===== SECTION: DOM Refs ===== */
+    const form = document.getElementById("loginForm");
+    const emailEl = document.getElementById("email");
+    const pwdEl = document.getElementById("password");
+    const statusEl = document.getElementById("status");
+    const forgot = document.getElementById("forgot");
+    const loginBtn = document.getElementById("loginBtn");
+
+    /* ===== SECTION: Helper (UI) ===== */
+    const show = (cls, msg) => statusEl.innerHTML = `<span class='${cls}'>${msg}</span>`;
+    const errMap = (code) => ({
+      "auth/invalid-email": "That email address looks invalid.",
+      "auth/user-disabled": "This account has been disabled.",
+      "auth/user-not-found": "No account found with that email.",
+      "auth/wrong-password": "Incorrect password.",
+      "auth/too-many-requests": "Too many attempts. Try again shortly.",
+    }[code] || "Could not sign in. Please try again.");
+
+    /* ===== SECTION: Auth — Auto-redirect disabled to allow account management ===== */
+    // DISABLED: Automatic redirect was preventing users from accessing login page
+    // to manage accounts, delete accounts, or switch accounts
+    // onAuthStateChanged(auth, (u) => {
+    //   if (u) {
+    //     // already signed in, go straight to profile
+    //     location.replace("./profile.html");
+    //   }
+    // });
+
+    /* ===== SECTION: Handlers ===== */
+    // Prevent form submission until BOTH email and password are filled
+    const preventEarlySubmit = (e) => {
+      const email = emailEl.value.trim();
+      const password = pwdEl.value.trim();
+      if (!email || !password) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!email && !password) {
+          show("err", "Please enter both email and password before submitting.");
+        } else if (!email) {
+          show("err", "Please enter your email address.");
+        } else if (!password) {
+          show("err", "Please enter your password.");
+        }
+        return false;
+      }
+      return true;
+    };
+
+    // Prevent Enter key from submitting form prematurely on input fields
+    emailEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const email = emailEl.value.trim();
+        const password = pwdEl.value.trim();
+        if (!email || !password) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!password) {
+            pwdEl.focus(); // Move to password field if empty
+            show("err", "Please enter your password before submitting.");
+          } else {
+            show("err", "Please enter your email before submitting.");
+          }
+        }
+      }
+    });
+
+    pwdEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const email = emailEl.value.trim();
+        const password = pwdEl.value.trim();
+        if (!email || !password) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!email) {
+            emailEl.focus(); // Move to email field if empty
+            show("err", "Please enter your email before submitting.");
+          } else {
+            show("err", "Please enter your password before submitting.");
+          }
+        }
+      }
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      // Double check both fields are filled before proceeding
+      if (!preventEarlySubmit(e)) return;
+      
+      const email = emailEl.value.trim();
+      const password = pwdEl.value;
+      if (!email || !password) {
+        show("err", "Email and password are required.");
+        return;
+      }
+      loginBtn.disabled = true;
+      show("prog", "Signing you in…");
+      
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // User successfully logged in with Firebase Auth
+        
+        show("ok", "Login successful! Redirecting to your profile...");
+        
+        // Redirect to profile after successful login
+        setTimeout(() => {
+          window.location.href = './profile.html';
+        }, 1000);
+      } catch (e) {
+        show("err", errMap(e?.code));
+      } finally {
+        loginBtn.disabled = false;
+      }
+    });
+
+    forgot.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const email = emailEl.value.trim();
+      if (!email) { show("err", "Enter your email first, then click ‘Forgot password?’"); return; }
+      show("prog", "Sending reset email…");
+      try {
+        await sendPasswordResetEmail(auth, email);
+        show("ok", "Password reset sent. Check your inbox.");
+      } catch (e) {
+        show("err", errMap(e?.code));
+      }
+    });
+
+    /* ===== SECTION: Enhanced Forgot Password with Modal & SendGrid ===== */
+    const forgotModal = document.getElementById("forgotModal");
+    const closeModalBtn = document.getElementById("closeModal");
+    const cancelResetBtn = document.getElementById("cancelReset");
+    const forgotPasswordForm = document.getElementById("forgotPasswordForm");
+    const resetEmailEl = document.getElementById("resetEmail");
+    const resetStatusEl = document.getElementById("resetStatus");
+    const sendResetBtn = document.getElementById("sendResetBtn");
+    
+    const showResetStatus = (cls, msg) => resetStatusEl.innerHTML = `<span class='${cls}'>${msg}</span>`;
+    
+    // Override the forgot link to open modal instead
+    forgot.removeEventListener("click", forgot.onclick);
+    forgot.addEventListener("click", (e) => {
+      e.preventDefault();
+      // Pre-fill email if user has entered it
+      const currentEmail = emailEl.value.trim();
+      if (currentEmail) {
+        resetEmailEl.value = currentEmail;
+      }
+      forgotModal.classList.add("active");
+      resetEmailEl.focus();
+      resetStatusEl.innerHTML = ""; // Clear previous status
+    });
+    
+    // Close modal handlers
+    const closeModal = () => {
+      forgotModal.classList.remove("active");
+      resetStatusEl.innerHTML = "";
+      forgotPasswordForm.reset();
+    };
+    
+    closeModalBtn.addEventListener("click", closeModal);
+    cancelResetBtn.addEventListener("click", closeModal);
+    
+    // Close modal when clicking overlay
+    forgotModal.addEventListener("click", (e) => {
+      if (e.target === forgotModal) closeModal();
+    });
+    
+    // Enhanced forgot password with SendGrid
+    forgotPasswordForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const email = resetEmailEl.value.trim();
+      if (!email) {
+        showResetStatus("err", "Please enter your email address.");
+        return;
+      }
+      
+      sendResetBtn.disabled = true;
+      showResetStatus("prog", "🔄 Sending password reset email...");
+      
+      try {
+        // Step 1: Use Firebase to generate secure reset link
+        await sendPasswordResetEmail(auth, email);
+        
+        // Step 2: Send enhanced email via SendGrid (optional enhancement)
+        // This provides a better branded experience while still using Firebase's secure links
+        try {
+          const response = await fetch('/api/send-password-reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              email: email,
+              resetLink: `${window.location.origin}/reset-password?email=${encodeURIComponent(email)}`
+            })
+          });
+          
+          if (response.ok) {
+            console.log('✅ Enhanced SendGrid email sent successfully');
+          } else {
+            console.log('⚠️ SendGrid email failed, but Firebase email was sent');
+          }
+        } catch (sendGridError) {
+          console.log('⚠️ SendGrid enhancement failed, but Firebase email was sent:', sendGridError);
+        }
+        
+        showResetStatus("ok", "📧 Password reset email sent! Check your inbox and spam folder.");
+        
+        // Auto-close modal after successful send
+        setTimeout(() => {
+          closeModal();
+          show("ok", "Password reset email sent. Check your inbox.");
+        }, 2000);
+        
+      } catch (error) {
+        console.error('❌ Password reset error:', error);
+        const errorMessage = errMap(error?.code) || "Failed to send reset email. Please try again.";
+        showResetStatus("err", errorMessage);
+      } finally {
+        sendResetBtn.disabled = false;
+      }
+    });
+
+    /* ===== SECTION: Donation Handlers ===== */
+    const donationStatusEl = document.getElementById("donationStatus");
+    const showDonationStatus = (cls, msg) => donationStatusEl.innerHTML = `<span class='${cls}'>${msg}</span>`;
+
+    // Handle donation button clicks
+    document.addEventListener('click', async (e) => {
+      if (!e.target.classList.contains('donation-btn')) return;
+      
+      const amount = parseFloat(e.target.getAttribute('data-amount'));
+      if (!amount || amount <= 0) return;
+      
+      e.target.disabled = true;
+      showDonationStatus("prog", "Creating secure checkout...");
+      
+      try {
+        const response = await fetch('/api/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: amount })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.checkoutUrl) {
+          showDonationStatus("ok", "Redirecting to secure payment...");
+          // Redirect to Square's hosted checkout page
+          window.location.href = data.checkoutUrl;
+        } else {
+          throw new Error(data.error || 'Failed to create checkout');
+        }
+      } catch (error) {
+        console.error('Donation error:', error);
+        showDonationStatus("err", "Payment setup failed. Please try again.");
+        e.target.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

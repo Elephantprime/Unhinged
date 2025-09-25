@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNHINGED — Casualties of Modern Dating</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{--red:#E11D2A}
+  *{box-sizing:border-box} body{margin:0;background:#0f0f12;color:#fff;font:500 16px/1.5 Inter,system-ui}
+  a{color:#fff;text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .pill{padding:8px 12px;background:#1a1b22;border:1px solid rgba(255,255,255,.08);border-radius:999px}
+  h1{margin:6px 0 2px;font-size:26px;font-weight:900}
+  .sub{color:#cfd0de}
+  .grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+  @media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
+  .card{background:#15161b;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px}
+  .tag{font-size:12px;padding:4px 8px;border-radius:999px;background:#23242e;border:1px solid rgba(255,255,255,.08)}
+</style>
+<script type="module">
+  import { initProfileGate } from "./js/profile_lock.js";
+  initProfileGate();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+    <a class="pill" href="index.html">← Home</a>
+    <a class="pill" href="chat.html">💬 Chat</a>
+    <a class="pill" href="badges.html">🏅 Badges</a>
+    <a class="pill" href="redflags.html">🚩 Red Flags</a>
+  </div>
+  <h1>Casualties of Modern Dating</h1>
+  <div class="sub">Real stories. Lightly edited. No doxxing, no hate. Keep it human.</div>
+
+  <div id="stories" class="grid">
+    <!-- Stories will be loaded here -->
+  </div>
+</div>
+
+<script type="module">
+  import { initProfileGate } from "./js/profile_lock.js";
+  import { db } from "./js/firebase.js";
+  import { collection, getDocs, orderBy, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  
+  // Initialize profile gate
+  initProfileGate();
+
+  // Load and display casualties
+  async function loadCasualties() {
+    const storiesContainer = document.getElementById('stories');
+    storiesContainer.innerHTML = '<div class="card"><div class="card-body">Loading stories...</div></div>';
+    
+    try {
+      const q = query(collection(db, 'casualties'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        storiesContainer.innerHTML = '<div class="card"><div class="card-body">No stories yet. Be the first to share!</div></div>';
+        return;
+      }
+      
+      storiesContainer.innerHTML = '';
+      
+      snapshot.forEach((doc) => {
+        const story = doc.data();
+        const storyCard = document.createElement('div');
+        storyCard.className = 'card';
+        
+        const createdAt = story.createdAt?.toDate ? story.createdAt.toDate().toLocaleDateString() : 'Recently';
+        
+        storyCard.innerHTML = `
+          <div class="card-body">
+            <img src="${story.url}" alt="Casualty of modern dating" style="width:100%;max-height:400px;object-fit:cover;border-radius:8px;margin-bottom:12px;">
+            ${story.caption ? `<p style="margin:8px 0;color:#fff;">${story.caption}</p>` : ''}
+            <div class="tag">${createdAt}</div>
+          </div>
+        `;
+        
+        storiesContainer.appendChild(storyCard);
+      });
+      
+    } catch (error) {
+      console.error('Error loading casualties:', error);
+      storiesContainer.innerHTML = '<div class="card"><div class="card-body">Error loading stories. Please try again.</div></div>';
+    }
+  }
+  
+  // Load casualties when page loads
+  loadCasualties();
+</script>
+</body>
+</html>"grid"></div>
+
+  <div class="card" style="margin-top:12px">
+    <h3 style="margin:0 0 6px">Submit your story</h3>
+    <p class="sub" style="margin:0 0 10px">Short + specific is best. We’ll feature the best ones on the homepage.</p>
+    <a class="pill" href="https://formsubmit.co/unfavorablejosh@gmail.com" target="_blank" rel="noopener" style="background:var(--red);border:none">Send via Email Form</a>
+  </div>
+</div>
+<script>
+const stories = [
+  { title:"The Slow Fade Speedrun", tag:"ghosting", text:"He planned a trip with me, then slowly stopped using vowels in texts. By day 7 it was just ‘k’. That was the goodbye." },
+  { title:"Double‑Booked Date Night", tag:"overlap", text:"Met his ‘friend’ at the same bar. We compared calendars. We both had the same invite screenshot." },
+  { title:"Soft Launched & Left", tag:"ambiguity", text:"She added my hand to stories for 3 months. I asked to meet her friends; she archived me." },
+  { title:"Attachment Acrobatics", tag:"avoidant/anxious", text:"We alternated between ‘wyd’ and essays. Therapy finally got the W." },
+  { title:"NFT of a Relationship", tag:"clout", text:"Looked valuable, no utility. Lots of hype, vanished market." },
+  { title:"Green Flag Plot Twist", tag:"growth", text:"We set boundaries, owned our flags, took the quiz again. Fewer 🚩, more plans." },
+];
+document.getElementById('stories').innerHTML = stories.map(s=>`
+  <div class="card">
+    <div style="font-weight:900">${s.title}</div>
+    <div style="margin:6px 0 8px;color:#d9d9e3">${s.text}</div>
+    <span class="tag">#${s.tag}</span>
+  </div>
+`).join('');
+</script>
+</body></html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNHINGED — Chat</title>
+<style>
+  :root{--red:#E11D2A}
+  *{box-sizing:border-box}
+  body{margin:0;background:#0f0f12;color:#fff;font:500 16px/1.5 Inter,system-ui}
+  a{color:#fff;text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .top{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .pill{padding:8px 12px;background:#1a1b22;border:1px solid rgba(255,255,255,.08);border-radius:999px}
+  .pill-logout{border-color:var(--red)}
+  h1{margin:6px 0 2px;font-size:26px;font-weight:900}
+  .sub{color:#cfd0de}
+  select,button,input{background:#12131a;border:1px solid #2a2a2a;color:#fff;border-radius:10px;padding:10px}
+  button{cursor:pointer;font-weight:800;transition:all 0.2s ease;background:#E11D2A;border-color:#E11D2A}
+  button:hover{background:#c41620;border-color:#c41620;transform:translateY(-1px)}
+  button:active{transform:scale(0.98)}
+  .card{background:#15161b;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+  .msgs{height:56vh;overflow-y:auto;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px;background:#0e0f14;display:flex;flex-direction:column;gap:8px;}
+  .msg{padding-top:8px;}
+  .me{color:#8ff79d}
+  .other{color:#e3e3ea}
+  .meta{font-size:12px;color:#9aa0aa;margin-top:2px}
+  .inputbar{display:flex;gap:8px;margin-top:10px}
+  .inputbar input{flex:1}
+  .sr-only{position:absolute;left:-9999px}
+</style>
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/admin-ui.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="pill" href="index.html">← Home</a>
+    <a class="pill" href="world/feed.html" data-testid="button-world">🌍 World Hub</a>
+    <a class="pill" href="app.html" data-testid="button-community">🔥 Community</a>
+    <a class="pill" href="chaos.html" data-testid="button-chaos">💔 Chaos</a>
+    <a class="pill" href="profile.html" data-testid="button-profile">👤 Profile</a>
+    <button id="logout" class="pill pill-logout" type="button">Logout</button>
+  </div>
+
+  <h1>Community Chat</h1>
+  <div id="status" class="sub" role="status" aria-live="polite">Connecting…</div>
+
+  <div class="row">
+    <label class="sr-only" for="room">Room</label>
+    <select id="room" aria-label="Select room">
+      <option value="lobby">#lobby</option>
+      <option value="dating">#dating</option>
+      <option value="friends">#friends</option>
+      <option value="fwb">#fwb</option>
+      <option value="vents">#vents</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div id="feed" class="msgs" aria-live="polite" aria-label="Messages feed"></div>
+    <div class="inputbar">
+      <input id="text" placeholder="Type a message…" autocomplete="off" aria-label="Message to send">
+      <button id="send" type="button" aria-label="Send message">Send</button>
+    </div>
+  </div>
+  <a class="chaos-btn" href="./app.html">Community Chaos</a>
+</div>
+
+<script type="module">
+/**
+ * Imports
+ * Note: we use your initialized firebase exports from ./js/firebase.js
+ */
+import {
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  orderBy,
+  limit
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import { auth, db, getUserDoc } from "./js/firebase.js";
+
+/* ---------- State ---------- */
+let currentUser = null;
+let displayName = "Member";
+let photoURL = "";
+let currentRoom = "lobby";
+let unsubscribe = null; // room listener
+
+/* ---------- DOM ---------- */
+const statusEl = document.getElementById("status");
+const feedEl = document.getElementById("feed");
+const textEl = document.getElementById("text");
+const sendEl = document.getElementById("send");
+const logoutEl = document.getElementById("logout");
+const roomEl = document.getElementById("room");
+
+/* ---------- Utils ---------- */
+const escapeHTML = (s="") =>
+  s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+
+function renderMessage(msg, uid) {
+  const mine = msg.uid === uid;
+  const who = escapeHTML(msg.displayName || "Member");
+  const text = escapeHTML(msg.text || "");
+  const time = msg.createdAt?.toDate ? msg.createdAt.toDate() : null;
+  const hh = time ? String(time.getHours()).padStart(2,"0") : "--";
+  const mm = time ? String(time.getMinutes()).padStart(2,"0") : "--";
+
+  const div = document.createElement("div");
+  div.className = "msg " + (mine ? "me" : "other");
+  div.innerHTML = `
+    <div>${text}</div>
+    <div class="meta">${mine ? "You" : who} • ${hh}:${mm}</div>
+  `;
+  return div;
+}
+
+function setStatus(t){ statusEl.textContent = t; }
+function scrollToBottom(){ feedEl.scrollTop = feedEl.scrollHeight; }
+
+/* ---------- Auth + Profile Gate ---------- */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    setStatus("Not logged in. Redirecting…");
+    setTimeout(()=> location.href = "./login.html", 800);
+    return;
+  }
+  currentUser = user;
+  try {
+    setStatus("Loading profile…");
+    const doc = await getUserDoc(user.uid);
+    if (!doc) {
+      setStatus("Profile not found. Redirecting…");
+      setTimeout(()=> location.href = "./profile.html", 800);
+      return;
+    }
+    // Gate: require name, age >= 18, location, photo
+    const ok =
+      !!(doc.displayName && doc.displayName.trim()) &&
+      Number(doc.age) >= 18 &&
+      !!(doc.location && doc.location.trim()) &&
+      !!(doc.photoURL && doc.photoURL.trim());
+
+    if (!ok) {
+      setStatus("Profile incomplete. Redirecting…");
+      setTimeout(()=> location.href = "./profile.html", 900);
+      return;
+    }
+    displayName = doc.displayName || user.displayName || "Member";
+    photoURL = doc.photoURL || user.photoURL || "";
+
+    // Ready -> join default room
+    joinRoom(currentRoom);
+  } catch (e) {
+    console.error(e);
+    setStatus("Error loading profile.");
+  }
+});
+
+/* ---------- Room Handling ---------- */
+function roomCollection(room){
+  // Structure: rooms/{room}/messages
+  return collection(db, "rooms", room, "messages");
+}
+
+function joinRoom(room){
+  // Clean old listener if any
+  if (unsubscribe) { try { unsubscribe(); } catch {} unsubscribe = null; }
+
+  currentRoom = room;
+  // clear UI
+  feedEl.innerHTML = "";
+  setStatus(`Joined #${room}. Loading messages…`);
+
+  const q = query(roomCollection(room), orderBy("createdAt","asc"), limit(200));
+  unsubscribe = onSnapshot(q, (snap)=>{
+    feedEl.innerHTML = "";
+    snap.forEach(doc=>{
+      const msg = doc.data();
+      feedEl.appendChild(renderMessage(msg, currentUser?.uid));
+    });
+    scrollToBottom();
+    setStatus(`#${room} — ${snap.size} message${snap.size===1?"":"s"}`);
+  }, (err)=>{
+    console.error(err);
+    setStatus(`Failed to load #${room}.`);
+  });
+}
+
+roomEl.addEventListener("change", () => {
+  const val = roomEl.value || "lobby";
+  joinRoom(val);
+});
+
+/* ---------- Send Message ---------- */
+async function sendMessage(){
+  const text = (textEl.value || "").trim();
+  if (!text) return;
+  if (!currentUser) return;
+
+  sendEl.disabled = true;
+  try {
+    await addDoc(roomCollection(currentRoom), {
+      uid: currentUser.uid,
+      displayName,
+      photoURL,
+      text,
+      createdAt: serverTimestamp(),
+      room: currentRoom
+    });
+    textEl.value = "";
+    scrollToBottom();
+  } catch (e) {
+    console.error(e);
+    // lightweight inline error feedback
+    setStatus("Failed to send. Try again.");
+  } finally {
+    sendEl.disabled = false;
+    textEl.focus();
+  }
+}
+
+sendEl.addEventListener("click", sendMessage);
+textEl.addEventListener("keydown", (e)=>{
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+/* ---------- Logout ---------- */
+logoutEl.addEventListener("click", async ()=>{
+  try {
+    if (unsubscribe) { try { unsubscribe(); } catch {} unsubscribe = null; }
+    await signOut(auth);
+    location.href = "./";
+  } catch (e) {
+    console.error(e);
+    setStatus("Logout failed.");
+  }
+});
+
+/* ---------- Cleanup ---------- */
+window.addEventListener("beforeunload", ()=>{
+  if (unsubscribe) { try { unsubscribe(); } catch {} }
+});
+</script>
+</body>
+</html>

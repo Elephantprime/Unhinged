@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Setup - DISABLED</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: white;
+      text-align: center;
+    }
+    .error {
+      background: #f44336;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .security-notice {
+      background: #ff3333;
+      border: 2px solid #cc0000;
+      padding: 30px;
+      border-radius: 12px;
+      margin: 30px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚫 ADMIN SETUP DISABLED</h1>
+  
+  <div class="security-notice">
+    <h2>⚠️ SECURITY NOTICE</h2>
+    <p><strong>This page has been permanently disabled for security reasons.</strong></p>
+    <p>Client-side admin elevation has been blocked to prevent unauthorized privilege escalation.</p>
+    <p>Admin status is now hardcoded server-side and cannot be modified through the web interface.</p>
+  </div>
+  
+  <div class="error">
+    ❌ Admin setup functionality has been removed due to critical security vulnerabilities.
+  </div>
+  
+  <p>If you are the legitimate administrator and need support, contact system administrators.</p>
+  
+  <script>
+    // Disable all functionality
+    console.error('🚫 Admin setup page has been disabled for security reasons');
+    
+    // Block any attempts to use the old functions
+    window.setupAdmin = function() {
+      alert('🚫 This functionality has been disabled for security reasons.');
+    };
+    
+    window.checkStatus = function() {
+      alert('🚫 This functionality has been disabled for security reasons.');
+    };
+  </script>
+</body>
+</html>

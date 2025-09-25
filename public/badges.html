@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNHINGED — Badges</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  :root{--red:#E11D2A;--ink:#0f0f12}
+  *{box-sizing:border-box} body{margin:0;background:#0f0f12;color:#fff;font:500 16px/1.55 Inter,system-ui}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .top{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+  .pill{padding:8px 12px;background:#1a1b22;border:1px solid rgba(255,255,255,.08);border-radius:999px}
+  h1{margin:6px 0 2px;font-size:28px;font-weight:900}
+  .sub{color:#cfd0de;margin-bottom:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .card{background:#15161b;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;display:flex;gap:12px}
+  .icon{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:#20222b;border:1px solid rgba(255,255,255,.07)}
+  .title{font-weight:900;margin:0}
+  .crit{color:#cfd0de;font-size:14px;margin:6px 0 0}
+  .tag{display:inline-block;margin-top:8px;font-size:12px;padding:4px 8px;border-radius:999px;background:#23242e;border:1px solid rgba(255,255,255,.08)}
+  .legend{margin:14px 0 0;color:#bdbdcc;font-size:13px}
+</style>
+<script type="module">
+  import { auth, db } from "./js/firebase.js";
+  import { addPointsToNavigation } from "./js/points-display.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  function checkProfileComplete(userData) {
+    if (!userData) return false;
+    return (userData.displayName || userData.username || '').trim() !== '' &&
+           (userData.age || 0) >= 18 &&
+           (userData.location || '').trim() !== '' &&
+           (userData.photoURL || '').trim() !== '';
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = './login.html';
+      return;
+    }
+    
+    try {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const userData = userDoc.exists() ? userDoc.data() : null;
+      
+      if (!checkProfileComplete(userData)) {
+        alert('Please complete your profile before accessing badges.');
+        window.location.href = './profile.html';
+        return;
+      }
+      
+      // Initialize points display after user authentication
+      addPointsToNavigation('#points-container', { position: 'replace', size: 'medium' });
+    } catch (error) {
+      console.error('Error checking profile:', error);
+      window.location.href = './profile.html';
+    }
+  });
+</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div id="points-container"></div>
+    <a class="pill" href="index.html">← Home</a>
+    <a class="pill" href="redflags.html">🚩 Red Flags</a>
+    <a class="pill" href="chat.html">💬 Chat</a>
+  </div>
+
+  <h1>Badge Catalog</h1>
+  <div class="sub">Earn these for behavior *on* Unhinged. Some are automatic, some require community upvotes or verification.</div>
+
+  <div class="grid">
+    <div class="card"><div class="icon">🎯</div><div><p class="title">Honest Intro</p><p class="crit">Completed profile with 100% truthful answers (peer‑verified).</p><span class="tag">Core</span></div></div>
+    <div class="card"><div class="icon">📅</div><div><p class="title">Showed Up</p><p class="crit">Attend 3 dates you scheduled through Unhinged (both parties confirm).</p><span class="tag">Reliability</span></div></div>
+    <div class="card"><div class="icon">⏰</div><div><p class="title">On Time</p><p class="crit">Arrive within 10 minutes for 5 dates in a row.</p><span class="tag">Reliability</span></div></div>
+    <div class="card"><div class="icon">🧾</div><div><p class="title">Receipts Ready</p><p class="crit">Upload 3 proof‑of‑plan screenshots (blurred personal info).</p><span class="tag">Transparency</span></div></div>
+    <div class="card"><div class="icon">🕊️</div><div><p class="title">No Ghost Zone</p><p class="crit">Zero ghost reports across 30 days.</p><span class="tag">Respect</span></div></div>
+    <div class="card"><div class="icon">🧊</div><div><p class="title">Icebreaker</p><p class="crit">Send first messages that get 10 positive reactions.</p><span class="tag">Social</span></div></div>
+    <div class="card"><div class="icon">🪙</div><div><p class="title">Split or Treat</p><p class="crit">Mark 3 dates as split/fair or host 1 “treat” night.</p><span class="tag">Fair Play</span></div></div>
+    <div class="card"><div class="icon">🧭</div><div><p class="title">Planner</p><p class="crit">Create 3 date plans with location & time that get 👍 from partners.</p><span class="tag">Leadership</span></div></div>
+    <div class="card"><div class="icon">🧯</div><div><p class="title">Chaos Controller</p><p class="crit">Resolve 2 report/blocks through mediation without escalation.</p><span class="tag">Safety</span></div></div>
+    <div class="card"><div class="icon">📵</div><div><p class="title">Phone Down</p><p class="crit">2 dates confirmed <em>no phone</em> during conversations (both confirm).</p><span class="tag">Presence</span></div></div>
+    <div class="card"><div class="icon">🏅</div><div><p class="title">Second Chance Champ</p><p class="crit">Go on a positive second date after a rocky first (both mark “improved”).</p><span class="tag">Growth</span></div></div>
+    <div class="card"><div class="icon">🧠</div><div><p class="title">Accountable AF</p><p class="crit">Publicly acknowledge a red flag & reduce it via actions over 30 days.</p><span class="tag">Growth</span></div></div>
+    <div class="card"><div class="icon">🛡️</div><div><p class="title">Verified Weekly</p><p class="crit">Complete selfie verification 4 weeks in a row.</p><span class="tag">Trust</span></div></div>
+    <div class="card"><div class="icon">📣</div><div><p class="title">Great Communicator</p><p class="crit">Earn 10 “clear communicator” feedbacks from different people.</p><span class="tag">Respect</span></div></div>
+    <div class="card"><div class="icon">💐</div><div><p class="title">Thoughtful</p><p class="crit">Partner adds a note praising a considerate gesture.</p><span class="tag">Vibes</span></div></div>
+    <div class="card"><div class="icon">🚗</div><div><p class="title">Distance Doesn’t Scare Me</p><p class="crit">Complete 2 dates >30 miles apart.</p><span class="tag">Effort</span></div></div>
+    <div class="card"><div class="icon">🧹</div><div><p class="title">Clean Exit</p><p class="crit">End 3 chats respectfully (both sides mark “respectful”).</p><span class="tag">Respect</span></div></div>
+    <div class="card"><div class="icon">🔥</div><div><p class="title">Low Chaos Streak</p><p class="crit">30‑day period with no new red flags added.</p><span class="tag">Discipline</span></div></div>
+  </div>
+
+  <p class="legend">Badges can be earned, removed, or decay over time based on ongoing behavior. We’ll show dates/timestamps on your public card.</p>
+</div>
+</body>
+</html>

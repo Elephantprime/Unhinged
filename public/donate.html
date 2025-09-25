@@ -1,0 +1,378 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UNHINGED — Support & Partnerships</title>
+  <meta name="theme-color" content="#E11D2A" />
+  <link rel="icon" href="/favicon.ico" />
+  <style>
+    :root{ --red:#E11D2A; --panel:#171923; --muted:#b8b9c6; --radius:16px; }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#0f0f12;color:#fff;font:500 16px/1.5 Inter,system-ui,Segoe UI,Roboto,Arial}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:1280px;margin:0 auto;padding:16px}
+    header{border-bottom:1px solid rgba(255,255,255,.06)}
+    .bar{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .logo{display:flex;align-items:center;gap:10px}
+    .mark{width:28px;height:28px;background:var(--red);border-radius:8px}
+    .word{font-weight:1000}
+    nav{display:flex;gap:10px}
+    .btn{display:inline-flex;align-items:center;border:1px solid rgba(255,255,255,.12);padding:10px 14px;border-radius:12px;font-weight:800;background:transparent;cursor:pointer;text-decoration:none}
+    .btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+    .btn.secondary{background:#2a2a2a;border-color:#2a2a2a;color:#fff}
+    .card{background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+    .card h2{margin:0;padding:14px 14px;border-bottom:1px solid rgba(255,255,255,.06);background:#12131a}
+    .card-body{padding:14px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
+    .price-card{text-align:center;padding:20px}
+    .price{font-size:2em;font-weight:bold;color:var(--red);margin:10px 0}
+    .features{list-style:none;padding:0;text-align:left}
+    .features li{padding:5px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+    .contact-form{display:grid;gap:10px;max-width:500px}
+    .contact-form input, .contact-form textarea{
+      padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);
+      background:#12131a;color:#fff
+    }
+    .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal-content{background:var(--panel);padding:20px;border-radius:12px;max-width:500px;width:90%}
+    @media (max-width:768px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap bar">
+      <div class="logo"><div class="mark"></div><div class="word">UNHINGED</div></div>
+      <nav>
+        <a class="btn" href="./index.html">Home</a>
+        <a class="btn" href="./login.html">Log in</a>
+        <a class="btn primary" href="./signup.html">Join</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="card">
+      <h2>Support UNHINGED</h2>
+      <div class="card-body">
+        <p>Help us build the most honest dating platform. Choose how you'd like to support or partner with us.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Investor Section -->
+      <div class="card" id="investor">
+        <h2>🚀 Real Investor</h2>
+        <div class="card-body price-card">
+          <div class="price">$10K+ Investment</div>
+          <ul class="features">
+            <li>Equity stake in UNHINGED</li>
+            <li>Board advisory position</li>
+            <li>Product development input</li>
+            <li>Revenue sharing agreement</li>
+            <li>Exclusive investor updates</li>
+          </ul>
+          <button class="btn primary" onclick="openInvestorModal()">Invest Now</button>
+        </div>
+      </div>
+
+      <!-- Affiliate Section -->
+      <div class="card" id="affiliate">
+        <h2>💰 Affiliate Partner</h2>
+        <div class="card-body price-card">
+          <div class="price">30% Commission</div>
+          <ul class="features">
+            <li>Earn on every referral</li>
+            <li>Custom tracking links</li>
+            <li>Marketing materials provided</li>
+            <li>Monthly payouts</li>
+            <li>Performance bonuses</li>
+          </ul>
+          <button class="btn primary" onclick="openAffiliateModal()">Join Affiliate</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advertising Section -->
+    <div class="card" id="advertising">
+      <h2>📢 Advertising Opportunities</h2>
+      <div class="card-body">
+        <p>Reach our engaged community of honest daters with targeted advertising.</p>
+        <div class="grid">
+          <div>
+            <h3>Banner Ads</h3>
+            <div class="price">$500/month</div>
+            <ul class="features">
+              <li>Prime placement on app homepage</li>
+              <li>10,000+ daily impressions</li>
+              <li>Click-through analytics</li>
+              <li>A/B testing support</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Sponsored Content</h3>
+            <div class="price">$1,000/month</div>
+            <ul class="features">
+              <li>Native content integration</li>
+              <li>Community engagement</li>
+              <li>Brand partnership posts</li>
+              <li>Influencer collaborations</li>
+            </ul>
+          </div>
+        </div>
+        <button class="btn primary" onclick="openAdvertisingModal()">Start Advertising</button>
+      </div>
+    </div>
+
+    <!-- General Donation -->
+    <div class="card">
+      <h2>❤️ Support Development</h2>
+      <div class="card-body">
+        <p>Help keep UNHINGED running with a one-time or monthly donation.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:15px">
+          <button class="btn secondary" onclick="donate(5)">$5</button>
+          <button class="btn secondary" onclick="donate(10)">$10</button>
+          <button class="btn secondary" onclick="donate(25)">$25</button>
+          <button class="btn secondary" onclick="donate(50)">$50</button>
+          <button class="btn primary" onclick="customDonate()">Custom Amount</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modals -->
+  <div class="modal" id="investorModal">
+    <div class="modal-content">
+      <h3>Investor Interest Form</h3>
+      <form class="contact-form" onsubmit="submitInvestorForm(event)">
+        <input type="text" name="name" placeholder="Full Name" required>
+        <input type="email" name="email" placeholder="Email Address" required>
+        <input type="text" name="company" placeholder="Company/Organization">
+        <input type="number" name="amount" placeholder="Investment Amount ($)" min="10000" required>
+        <textarea name="message" placeholder="Tell us about your investment goals and experience" rows="4" required></textarea>
+        <div style="display:flex;gap:10px">
+          <button type="submit" class="btn primary">Submit Application</button>
+          <button type="button" class="btn secondary" onclick="closeModal('investorModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="affiliateModal">
+    <div class="modal-content">
+      <h3>Affiliate Partner Application</h3>
+      <form class="contact-form" onsubmit="submitAffiliateForm(event)">
+        <input type="text" name="name" placeholder="Full Name" required>
+        <input type="email" name="email" placeholder="Email Address" required>
+        <input type="url" name="website" placeholder="Website/Social Media URL">
+        <input type="text" name="channel" placeholder="Marketing Channel (Blog, YouTube, Instagram, etc.)">
+        <textarea name="strategy" placeholder="Describe your audience and marketing strategy" rows="4" required></textarea>
+        <div style="display:flex;gap:10px">
+          <button type="submit" class="btn primary">Apply Now</button>
+          <button type="button" class="btn secondary" onclick="closeModal('affiliateModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="advertisingModal">
+    <div class="modal-content">
+      <h3>Advertising Inquiry</h3>
+      <form class="contact-form" onsubmit="submitAdvertisingForm(event)">
+        <input type="text" name="company" placeholder="Company Name" required>
+        <input type="text" name="contact" placeholder="Contact Person" required>
+        <input type="email" name="email" placeholder="Email Address" required>
+        <select name="adType" required style="padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:#12131a;color:#fff">
+          <option value="">Select Ad Type</option>
+          <option value="banner">Banner Ads</option>
+          <option value="sponsored">Sponsored Content</option>
+          <option value="both">Both</option>
+          <option value="custom">Custom Package</option>
+        </select>
+        <input type="number" name="budget" placeholder="Monthly Budget ($)" min="500">
+        <textarea name="details" placeholder="Campaign details and goals" rows="4" required></textarea>
+        <div style="display:flex;gap:10px">
+          <button type="submit" class="btn primary">Send Inquiry</button>
+          <button type="button" class="btn secondary" onclick="closeModal('advertisingModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Check for success parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      alert('Thank you for your donation! Your payment was successful.');
+      // Remove success parameter from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+
+    function openInvestorModal() {
+      document.getElementById('investorModal').style.display = 'flex';
+    }
+
+    function openAffiliateModal() {
+      document.getElementById('affiliateModal').style.display = 'flex';
+    }
+
+    function openAdvertisingModal() {
+      document.getElementById('advertisingModal').style.display = 'flex';
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
+    async function donate(amount) {
+      try {
+        const response = await fetch('/api/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: amount * 100 }) // Convert to cents
+        });
+        
+        const session = await response.json();
+        console.log('Payment response:', session);
+        
+        if (session.success && session.url) {
+          window.location.href = session.url;
+        } else {
+          console.error('Payment creation failed:', session);
+          let errorMsg = 'Unable to create payment: ' + (session.error || 'Unknown error');
+          
+          // Add debug info if available
+          if (session.debug) {
+            errorMsg += '\n\nDebug Info:';
+            errorMsg += '\nHas Access Token: ' + session.debug.hasAccessToken;
+            errorMsg += '\nHas Location ID: ' + session.debug.hasLocationId;
+            errorMsg += '\nEnvironment: ' + session.debug.environment;
+            errorMsg += '\nError: ' + session.debug.message;
+          }
+          
+          alert(errorMsg);
+        }
+      } catch (error) {
+        console.error('Payment error:', error);
+        alert('Network error creating payment. Please check your connection and try again.');
+      }
+    }
+
+    function customDonate() {
+      const amount = prompt('Enter donation amount:');
+      if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+        donate(parseFloat(amount));
+      }
+    }
+
+    async function submitInvestorForm(event) {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      
+      try {
+        const response = await fetch('/api/submit-investor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'investor',
+            name: formData.get('name'),
+            email: formData.get('email'),
+            company: formData.get('company'),
+            amount: formData.get('amount'),
+            message: formData.get('message'),
+            timestamp: new Date().toISOString()
+          })
+        });
+        
+        if (response.ok) {
+          alert('Thank you for your investment interest! We\'ll contact you within 24 hours.');
+        } else {
+          alert('Submission failed. Please try again or contact us directly.');
+        }
+      } catch (error) {
+        console.error('Submission error:', error);
+        alert('Submission error. Please try again.');
+      }
+      
+      closeModal('investorModal');
+      event.target.reset();
+    }
+
+    async function submitAffiliateForm(event) {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      
+      try {
+        const response = await fetch('/api/submit-affiliate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'affiliate',
+            name: formData.get('name'),
+            email: formData.get('email'),
+            website: formData.get('website'),
+            channel: formData.get('channel'),
+            strategy: formData.get('strategy'),
+            timestamp: new Date().toISOString()
+          })
+        });
+        
+        if (response.ok) {
+          alert('Your affiliate application has been submitted! We\'ll review and get back to you soon.');
+        } else {
+          alert('Submission failed. Please try again or contact us directly.');
+        }
+      } catch (error) {
+        console.error('Submission error:', error);
+        alert('Submission error. Please try again.');
+      }
+      
+      closeModal('affiliateModal');
+      event.target.reset();
+    }
+
+    async function submitAdvertisingForm(event) {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      
+      try {
+        const response = await fetch('/api/submit-advertising', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'advertising',
+            company: formData.get('company'),
+            contact: formData.get('contact'),
+            email: formData.get('email'),
+            adType: formData.get('adType'),
+            budget: formData.get('budget'),
+            details: formData.get('details'),
+            timestamp: new Date().toISOString()
+          })
+        });
+        
+        if (response.ok) {
+          alert('Your advertising inquiry has been sent! Our team will contact you to discuss opportunities.');
+        } else {
+          alert('Submission failed. Please try again or contact us directly.');
+        }
+      } catch (error) {
+        console.error('Submission error:', error);
+        alert('Submission error. Please try again.');
+      }
+      
+      closeModal('advertisingModal');
+      event.target.reset();
+    }
+
+    // Close modals when clicking outside
+    window.addEventListener('click', function(event) {
+      if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<script type="module">
+  import { initProfileGate } from "./js/profile_lock.js";
+  initProfileGate();
+</script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>UNHINGED — Chaos Wall</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{--red:#E11D2A}
+  *{box-sizing:border-box} 
+  body{margin:0;background:#0f0f12;color:#fff;font:500 16px/1.5 Inter,system-ui}
+  a{color:#fff;text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .top{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .pill{padding:8px 12px;background:#1a1b22;border:1px solid rgba(255,255,255,.08);border-radius:999px;font-size:14px}
+  h1{margin:6px 0 2px;font-size:26px;font-weight:900}
+  .sub{color:#cfd0de;margin-bottom:20px}
+
+  .chaos-wall{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+  @media (min-width:900px){.chaos-wall{grid-template-columns:1fr 1fr}}
+  
+  .chaos-post{background:#15161b;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;position:relative}
+  .red-flag{font-size:16px;line-height:1.4;margin:0 0 12px;color:#f0f0f0;font-style:italic}
+  .red-flag::before{content:'"';color:#E11D2A;font-size:20px}
+  .red-flag::after{content:'"';color:#E11D2A;font-size:20px}
+  
+  .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .user{color:#E11D2A;font-weight:600;font-size:14px}
+  .likes{color:#ff6b9d;font-size:14px;cursor:pointer;padding:4px 8px;border-radius:6px;background:rgba(255,107,157,.1)}
+  .likes:hover{background:rgba(255,107,157,.2)}
+  
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .tag{font-size:11px;padding:3px 6px;border-radius:999px;background:#23242e;border:1px solid rgba(255,255,255,.08);color:#ccc}
+
+  .card{background:#14161a;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-top:20px}
+  label{display:block;margin:8px 0 4px;color:#d8d8e0}
+  input,textarea{width:100%;background:#0c0c0c;border:1px solid #2a2a2a;color:#fff;padding:12px;border-radius:12px;outline:none}
+  textarea{min-height:80px;resize:vertical}
+  .btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;font-weight:600;cursor:pointer}
+  .btn.primary{background:var(--red);color:#fff}
+  .btn:hover{opacity:.9}
+  .msg{font-size:13px;color:#bdbdcc;margin-top:6px}
+  
+  .empty-state{text-align:center;padding:40px;color:#666;font-style:italic}
+</style>
+</head><body>
+<div class="wrap">
+  <div class="top">
+    <a class="pill" href="app.html">← App</a>
+    <a class="pill" href="reviews.html">💔 Reviews</a>
+    <a class="pill" href="badges.html">🏅 Badges</a>
+    <a class="pill" href="redflags.html">🚩 Red Flags</a>
+  </div>
+
+  <h1>Chaos Wall</h1>
+  <div class="sub">Share your toxic behaviors and red flags. Self-awareness is the first step.</div>
+
+  <!-- Chaos Posts -->
+  <div id="chaosList" class="chaos-wall">
+    <div class="empty-state">Loading chaos posts...</div>
+  </div>
+
+  <!-- Add a chaos post -->
+  <div class="card">
+    <h3 style="margin:0 0 12px">Confess Your Chaos</h3>
+    <form id="chaosForm">
+      <label>Your Red Flag / Toxic Behavior</label>
+      <textarea id="chaosText" required placeholder="I ghost people when I like them too much..." maxlength="280"></textarea>
+      
+      <label>Tags (optional)</label>
+      <input id="chaosTags" placeholder="ghosting, avoidant, toxic, self-sabotage">
+      
+      <button class="btn primary" type="submit">Post to Chaos Wall</button>
+      <div id="chaosMsg" class="msg">Share your red flags anonymously with the community.</div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db } from "./js/firebase.js";
+import { collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+let currentUser = null;
+
+// Auth state observer
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+});
+
+// Load and display chaos posts
+function loadChaosPosts() {
+  const chaosQuery = query(
+    collection(db, "chaosPosts"),
+    orderBy("timestamp", "desc"),
+    limit(50)
+  );
+
+  onSnapshot(chaosQuery, (snapshot) => {
+    const chaosList = document.getElementById("chaosList");
+    
+    if (snapshot.empty) {
+      chaosList.innerHTML = '<div class="empty-state">No chaos posts yet. Be the first to share!</div>';
+      return;
+    }
+    
+    const posts = [];
+    snapshot.forEach(doc => {
+      posts.push({ id: doc.id, ...doc.data() });
+    });
+    
+    chaosList.innerHTML = posts.map(post => `
+      <div class="chaos-post">
+        <p class="red-flag">${escapeHtml(post.redFlag)}</p>
+        <div class="meta">
+          <span class="user">@${escapeHtml(post.username || 'Anonymous')}</span>
+          <span class="likes" onclick="likePost('${post.id}')">❤️ ${post.likes || 0}</span>
+        </div>
+        ${post.tags && post.tags.length ? 
+          `<div class="tags">${post.tags.map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join('')}</div>` 
+          : ''}
+      </div>
+    `).join('');
+  });
+}
+
+// Like a post
+window.likePost = async function(postId) {
+  if (!currentUser) {
+    alert('Please log in to like posts');
+    return;
+  }
+  
+  try {
+    const postRef = doc(db, "chaosPosts", postId);
+    await updateDoc(postRef, {
+      likes: increment(1)
+    });
+  } catch (error) {
+    console.error('Error liking post:', error);
+  }
+};
+
+// Submit chaos post
+document.getElementById('chaosForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  if (!currentUser) {
+    alert('Please log in to post');
+    return;
+  }
+  
+  const redFlag = document.getElementById('chaosText').value.trim();
+  const tagsInput = document.getElementById('chaosTags').value.trim();
+  const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+  
+  if (!redFlag) return;
+  
+  const msg = document.getElementById('chaosMsg');
+  msg.textContent = 'Posting...';
+  
+  try {
+    const chaosPost = {
+      userId: currentUser.uid,
+      username: currentUser.displayName || currentUser.email?.split('@')[0] || 'Anonymous',
+      redFlag: redFlag,
+      timestamp: serverTimestamp(),
+      likes: 0,
+      tags: tags
+    };
+    
+    await addDoc(collection(db, "chaosPosts"), chaosPost);
+    
+    // Reset form
+    document.getElementById('chaosText').value = '';
+    document.getElementById('chaosTags').value = '';
+    msg.textContent = 'Posted to chaos wall!';
+    
+    setTimeout(() => {
+      msg.textContent = 'Share your red flags anonymously with the community.';
+    }, 3000);
+    
+  } catch (error) {
+    console.error('Error posting:', error);
+    msg.textContent = 'Error posting. Please try again.';
+  }
+});
+
+// Utility function
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Initialize
+loadChaosPosts();
+</script>
+</body></html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Unhinged — Public Profile</title>
+  <style>
+    :root { --bg:#0e0e12; --panel:#15161b; --muted:#cfd0de; --red:#E11D2A; }
+    *{box-sizing:border-box} 
+    body{margin:0;background:var(--bg);color:#fff;font-family:Arial,sans-serif}
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;background:var(--panel);border-bottom:1px solid #2a2a2a}
+    .btn{border:none;background:var(--red);color:#fff;padding:.5rem .9rem;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+    .btn.secondary{background:#2a2a2a}
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    .hero{position:relative;border:2px solid #2a2a2a;border-radius:16px;overflow:hidden;aspect-ratio:3/4;background:#000}
+    .hero img{width:100%;height:100%;object-fit:cover;display:block}
+    .info{margin-top:14px}
+    h1{margin:.25rem 0 0;font-size:1.6rem}
+    .sub{color:#cfd0de;margin:.25rem 0 .5rem}
+    .pillset{display:flex;gap:6px;flex-wrap:wrap;margin:.25rem 0}
+    .badge, .flag{width:28px;height:28px;border-radius:50%;display:inline-block;border:1px solid #2a2a2a;overflow:hidden}
+    .badge img, .flag img{width:100%;height:100%;object-fit:cover}
+    .card{background:var(--panel);border:1px solid #2a2a2a;border-radius:12px;padding:12px;margin-top:12px}
+    .title{font-weight:700;margin-bottom:6px}
+    .muted{color:var(--muted)}
+    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+    .gph{border:1px solid #2a2a2a;border-radius:8px;overflow:hidden;aspect-ratio:1/1;background:#000}
+    .gph img{width:100%;height:100%;object-fit:cover}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="btn secondary" href="./profile.html">← Back</a>
+    <div>Public Profile</div>
+    <a class="btn" href="./app.html">Community Chaos</a>
+  </div>
+
+  <div class="wrap">
+    <div class="hero"><img id="photo" alt="Profile photo"/></div>
+    <div class="info">
+      <h1 id="name">Member</h1>
+      <div class="sub" id="loc">@handle • City, State</div>
+      <div class="pillset" id="badges"></div>
+      <div class="pillset" id="flags"></div>
+    </div>
+
+    <div class="card">
+      <div class="title">About</div>
+      <div id="bio" class="muted"></div>
+    </div>
+
+    <div class="card">
+      <div class="title">Hobbies & Interests</div>
+      <div id="hobbies" class="muted"></div>
+      <div id="interests" class="muted" style="margin-top:.25rem"></div>
+    </div>
+
+    <div class="card">
+      <div class="title">Photos</div>
+      <div class="gallery" id="gallery"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Initialize profile gate if available
+    if (window.initProfileGate) {
+      window.initProfileGate();
+    }
+
+    // DOM Elements
+    const photoEl = document.getElementById("photo");
+    const nameEl = document.getElementById("name");
+    const locEl = document.getElementById("loc");
+    const bioEl = document.getElementById("bio");
+    const hobbiesEl = document.getElementById("hobbies");
+    const interestsEl = document.getElementById("interests");
+    const badgesEl = document.getElementById("badges");
+    const flagsEl = document.getElementById("flags");
+    const galleryEl = document.getElementById("gallery");
+
+    function setText(el, val) { 
+      el.textContent = val || ""; 
+    }
+
+    function renderBadges(arr = []) {
+      badgesEl.innerHTML = "";
+      (arr || []).forEach(url => {
+        const d = document.createElement("span"); 
+        d.className = "badge";
+        const img = new Image(); 
+        img.src = url; 
+        img.alt = "badge";
+        d.appendChild(img); 
+        badgesEl.appendChild(d);
+      });
+    }
+
+    function renderFlags(arr = []) {
+      flagsEl.innerHTML = "";
+      const count = Array.isArray(arr) ? arr.length : 0;
+      if (!count) return;
+      for (let i = 0; i < count; i++) {
+        const d = document.createElement("span"); 
+        d.className = "flag";
+        d.textContent = "🚩";
+        flagsEl.appendChild(d);
+      }
+    }
+
+    function renderGallery(photos = []) {
+      galleryEl.innerHTML = "";
+      (photos || []).forEach(url => {
+        const box = document.createElement("div"); 
+        box.className = "gph";
+        const img = new Image(); 
+        img.src = url; 
+        img.alt = "photo";
+        box.appendChild(img); 
+        galleryEl.appendChild(box);
+      });
+    }
+
+    // Get URL parameter for target user ID
+    const params = new URLSearchParams(location.search);
+    const targetUid = params.get("uid");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { 
+        location.replace("./login.html"); 
+        return; 
+      }
+      
+      if (!targetUid) { 
+        nameEl.textContent = "No profile specified"; 
+        return; 
+      }
+
+      try {
+        const snap = await getDoc(doc(db, "users", targetUid));
+        if (!snap.exists()) { 
+          nameEl.textContent = "Profile not found."; 
+          return; 
+        }
+        
+        const p = snap.data();
+
+        const display = p.displayName || "Member";
+        const age = p.age ? `, ${p.age}` : "";
+        nameEl.textContent = `${display}${age}`;
+        
+        const handle = p.username ? `@${p.username}` : "";
+        const where = p.location || "";
+        locEl.textContent = [handle, where].filter(Boolean).join(" • ");
+
+        // Use PhotoUtils for safe image loading with fallbacks
+        const photoUrl = p.photoURL || (Array.isArray(p.photos) && p.photos[0]);
+        if (window.PhotoUtils?.loadImageWithFallback) {
+          window.PhotoUtils.loadImageWithFallback(photoEl, photoUrl, 'profile');
+        } else {
+          // Use data URL for default avatar instead of external placeholder service
+          photoEl.src = photoUrl || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjEyMDAiIHZpZXdCb3g9IjAgMCA4MDAgMTIwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSIxMjAwIiBmaWxsPSIjMkEyQzM5Ii8+CjxjaXJjbGUgY3g9IjQwMCIgY3k9IjUwMCIgcj0iMTAwIiBmaWxsPSIjN0Y4Mzk2Ii8+Cjx0ZXh0IHg9IjQwMCIgeT0iNzUwIiBmaWxsPSIjN0Y4Mzk2IiBmb250LXNpemU9IjQ4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiI+UHJvZmlsZSBQaG90bzwvdGV4dD4KPHN2Zz4=";
+        }
+        
+        setText(bioEl, p.bio);
+        setText(hobbiesEl, p.hobbies ? `Hobbies: ${p.hobbies}` : "");
+        setText(interestsEl, p.interests ? `Interests: ${p.interests}` : "");
+
+        renderBadges(p.badges || []);
+        renderFlags(p.flags || []);
+        renderGallery(p.photos || (p.photoURL ? [p.photoURL] : []));
+
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        nameEl.textContent = "Error loading profile";
+      }
+    });
+  </script>
+</body>
+</html>

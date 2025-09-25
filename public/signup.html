@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unhinged — Join Now</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root { --bg:#0e0e12; --panel:#15161b; --muted:#cfd0de; --red:#E11D2A; --ok:#4CAF50; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#fff}
+    a{color:#9ecbff;text-decoration:none}
+
+    .wrap{max-width:880px;margin:0 auto;padding:18px}
+    .card{background:var(--panel);border:1px solid #2a2a2a;border-radius:14px;padding:16px}
+    .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .brand{font-weight:700}
+    .muted{color:var(--muted);font-size:.95rem}
+
+    /* Steps */
+    .steps{display:grid;gap:16px}
+    .step{display:none}
+    .step.active{display:block}
+
+    /* Inputs */
+    label{display:block;margin:.35rem 0 .25rem}
+    input[type="email"],input[type="password"]{
+      width:100%;padding:12px;border-radius:10px;border:1px solid #2a2a2a;background:#12131a;color:#fff
+    }
+    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+    /* Modern buttons now loaded from style.css */
+    .status{margin-top:8px;font-size:.95rem}.ok{color:#9ae6b4}.err{color:#ff8e8e}.prog{color:#ffd27f}
+
+    /* Quiz layout */
+    .quiz-wrap{max-width:760px;margin:0 auto}
+    .q-list{display:grid;gap:14px}
+    .q-row{
+      display:grid;grid-template-columns:1fr 1.2fr;gap:12px;
+      padding:12px;border:1px solid #2a2a2a;border-radius:12px;background:#14151a;align-items:start
+    }
+    .q-label{font-weight:650;line-height:1.3}
+    .q-help{color:#cfd0de;font-size:.9rem;margin-top:4px}
+    .q-control{display:grid;gap:8px}
+    .q-options{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+    .q-options.compact{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .q-options input{display:none}
+    .pill{display:block;text-align:center;padding:9px 10px;border:1px solid #3a3b44;border-radius:999px;cursor:pointer;user-select:none}
+    .q-options input:checked + .pill{border-color:var(--red);background:#E11D2A22}
+    @media (max-width:720px){ .q-row{grid-template-columns:1fr} }
+
+    .divider{height:1px;background:#2a2a2a;margin:10px 0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">Join Unhinged</div>
+      <div><a href="./login.html">Already have an account?</a></div>
+    </div>
+
+    <div class="card">
+      <div class="steps" id="steps">
+
+        <!-- ===== STEP 1: Account ===== -->
+        <section class="step active" id="step1">
+          <h3>Create your account</h3>
+          <div class="muted">Use your email and a strong password. You’ll take a quick quiz next.</div>
+
+          <label for="email">Email <span class="muted">*</span></label>
+          <input id="email" type="email" autocomplete="email" required />
+
+          <label for="password">Password <span class="muted">*</span></label>
+          <input id="password" type="password" autocomplete="new-password" required />
+
+          <div class="actions">
+            <button class="btn secondary" id="cancel1" type="button" onclick="location.href='./index.html'">Cancel</button>
+            <button class="btn" id="toStep2" type="button">Continue to Quiz</button>
+          </div>
+
+          <div class="status" id="status1"></div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- ===== STEP 2: Quiz ===== -->
+        <section class="step" id="step2">
+          <div class="quiz-wrap">
+            <h3>Quick Start Quiz</h3>
+            <div class="muted">Be honest — your matches see fewer red flags when your answers show healthy patterns.</div>
+
+            <div class="q-list" id="quiz">
+              <!-- Q1 -->
+              <div class="q-row" data-q="q1">
+                <div class="q-label">
+                  How often do you raise your voice during disagreements?
+                  <div class="q-help">Frequency predicts conflict style.</div>
+                </div>
+                <div class="q-control">
+                  <div class="q-options">
+                    <label><input type="radio" name="q1" value="0"><span class="pill">Never</span></label>
+                    <label><input type="radio" name="q1" value="1"><span class="pill">Rarely</span></label>
+                    <label><input type="radio" name="q1" value="2"><span class="pill">Sometimes</span></label>
+                    <label><input type="radio" name="q1" value="3"><span class="pill">Often</span></label>
+                    <label><input type="radio" name="q1" value="4"><span class="pill">Almost always</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Q2 -->
+              <div class="q-row" data-q="q2">
+                <div class="q-label">
+                  Your partner wants a night out with friends without you. You:
+                  <div class="q-help">Pick the most likely behavior.</div>
+                </div>
+                <div class="q-control">
+                  <div class="q-options compact">
+                    <label><input type="radio" name="q2" value="0"><span class="pill">Wish them fun</span></label>
+                    <label><input type="radio" name="q2" value="2"><span class="pill">Text often</span></label>
+                    <label><input type="radio" name="q2" value="4"><span class="pill">Insist they don’t go</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Q3 -->
+              <div class="q-row" data-q="q3">
+                <div class="q-label">
+                  In the last 12 months, how many times did you miss a bill payment?
+                  <div class="q-help">We track stability, not amounts.</div>
+                </div>
+                <div class="q-control">
+                  <div class="q-options">
+                    <label><input type="radio" name="q3" value="0"><span class="pill">0</span></label>
+                    <label><input type="radio" name="q3" value="1"><span class="pill">1</span></label>
+                    <label><input type="radio" name="q3" value="2"><span class="pill">2</span></label>
+                    <label><input type="radio" name="q3" value="3"><span class="pill">3–4</span></label>
+                    <label><input type="radio" name="q3" value="4"><span class="pill">5+</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Q4 -->
+              <div class="q-row" data-q="q4">
+                <div class="q-label">How often do you drink enough to feel impaired?</div>
+                <div class="q-control">
+                  <div class="q-options">
+                    <label><input type="radio" name="q4" value="0"><span class="pill">Never</span></label>
+                    <label><input type="radio" name="q4" value="1"><span class="pill">Monthly-</span></label>
+                    <label><input type="radio" name="q4" value="2"><span class="pill">Monthly+</span></label>
+                    <label><input type="radio" name="q4" value="3"><span class="pill">Weekly</span></label>
+                    <label><input type="radio" name="q4" value="4"><span class="pill">Most days</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Q5 -->
+              <div class="q-row" data-q="q5">
+                <div class="q-label">I take responsibility quickly when I mess up.</div>
+                <div class="q-control">
+                  <div class="q-options">
+                    <label><input type="radio" name="q5" value="0"><span class="pill">Strongly agree</span></label>
+                    <label><input type="radio" name="q5" value="1"><span class="pill">Agree</span></label>
+                    <label><input type="radio" name="q5" value="2"><span class="pill">Neutral</span></label>
+                    <label><input type="radio" name="q5" value="3"><span class="pill">Disagree</span></label>
+                    <label><input type="radio" name="q5" value="4"><span class="pill">Strongly disagree</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Q6 (reversed) -->
+              <div class="q-row" data-q="q6">
+                <div class="q-label">
+                  When there’s conflict, it’s usually the other person’s fault.
+                  <div class="q-help">Reversed for consistency.</div>
+                </div>
+                <div class="q-control">
+                  <div class="q-options">
+                    <label><input type="radio" name="q6" value="4"><span class="pill">Strongly agree</span></label>
+                    <label><input type="radio" name="q6" value="3"><span class="pill">Agree</span></label>
+                    <label><input type="radio" name="q6" value="2"><span class="pill">Neutral</span></label>
+                    <label><input type="radio" name="q6" value="1"><span class="pill">Disagree</span></label>
+                    <label><input type="radio" name="q6" value="0"><span class="pill">Strongly disagree</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Q7 -->
+              <div class="q-row" data-q="q7">
+                <div class="q-label">If someone stops replying after a few messages, what do you do?</div>
+                <div class="q-control">
+                  <div class="q-options compact">
+                    <label><input type="radio" name="q7" value="0"><span class="pill">Move on</span></label>
+                    <label><input type="radio" name="q7" value="2"><span class="pill">Check once</span></label>
+                    <label><input type="radio" name="q7" value="4"><span class="pill">Keep messaging</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Q8 attention check -->
+              <div class="q-row" data-q="q8">
+                <div class="q-label">
+                  For this question only, please select <b>“Agree”</b>.
+                  <div class="q-help">Makes sure you’re reading.</div>
+                </div>
+                <div class="q-control">
+                  <div class="q-options">
+                    <label><input type="radio" name="q8" value="2"><span class="pill">Strongly agree</span></label>
+                    <label><input type="radio" name="q8" value="1" data-correct="1"><span class="pill">Agree</span></label>
+                    <label><input type="radio" name="q8" value="2"><span class="pill">Neutral</span></label>
+                    <label><input type="radio" name="q8" value="3"><span class="pill">Disagree</span></label>
+                    <label><input type="radio" name="q8" value="4"><span class="pill">Strongly disagree</span></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn secondary" id="back2" type="button">Back</button>
+              <button class="btn" id="create" type="button">Create Account</button>
+            </div>
+            <div class="status" id="status2"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Scripts ===== -->
+  <script type="module">
+    import { auth, db } from "./js/firebase.js";
+    import {
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      doc, setDoc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // ---- step switching
+    const step1 = document.getElementById("step1");
+    const step2 = document.getElementById("step2");
+    function showStep(n){
+      step1.classList.toggle("active", n===1);
+      step2.classList.toggle("active", n===2);
+    }
+    document.getElementById("toStep2").addEventListener("click", ()=>{
+      const email = document.getElementById("email").value.trim();
+      const pwd = document.getElementById("password").value;
+      const s = document.getElementById("status1");
+      if(!email || !pwd){ s.innerHTML = "<span class='err'>Email and password are required.</span>"; return; }
+      s.textContent = "";
+      showStep(2);
+    });
+    document.getElementById("back2").addEventListener("click", ()=> showStep(1));
+
+    // ---- quiz helpers
+    const toNum = (v,def=0)=> Number.isFinite(Number(v)) ? Number(v) : def;
+
+    const RULES = [
+      { code:"anger_control",        label:"Anger / Escalation",      when: a => toNum(a.q1)>=3 },
+      { code:"controlling_behavior", label:"Control / Boundaries",    when: a => toNum(a.q2)>=4 },
+      { code:"financial_instability",label:"Financial Instability",   when: a => toNum(a.q3)>=3 },
+      { code:"substance_risk",       label:"Substance Risk",          when: a => toNum(a.q4)>=3 },
+      { code:"accountability_low",   label:"Low Accountability",      when: a => (toNum(a.q5)>=3)||(toNum(a.q6)>=3) },
+      { code:"harassment_persistence",label:"Doesn't accept 'No'",    when: a => toNum(a.q7)>=4 },
+      { code:"attention_fail",       label:"Did not read",            when: a => { const picked=document.querySelector('[data-q=\"q8\"] input:checked'); return !picked || !picked.hasAttribute('data-correct'); } },
+      { code:"inconsistency",        label:"Inconsistent Answers",    when: a => { const p=toNum(a.q5), o=toNum(a.q6); return (p>=3 && o>=3) || Math.abs(p-(4-o))>=3; } },
+    ];
+
+    function getAnswers(){
+      const answers = {};
+      document.querySelectorAll(".q-row").forEach(row=>{
+        const name = row.getAttribute("data-q");
+        const sel = row.querySelector("input[type=radio]:checked");
+        answers[name] = sel ? sel.value : null;
+      });
+      return answers;
+    }
+    function calculateFlags(answers){
+      const hits = [];
+      for(const r of RULES){ if(r.when(answers)) hits.push({code:r.code,label:r.label}); }
+      return hits;
+    }
+
+    async function saveQuiz(uid, answers, flags){
+      const payload = {
+        quiz: { completed:true, answers, flags, updatedAt: serverTimestamp() },
+        flags: flags.map(f=>f.code), // mirror for fast filters
+        updatedAt: serverTimestamp()
+      };
+      await setDoc(doc(db,"users",uid), payload, { merge:true });
+    }
+
+    // ---- create account + save quiz
+    document.getElementById("create").addEventListener("click", async ()=>{
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const s = document.getElementById("status2");
+
+      // completeness
+      const answers = getAnswers();
+      const missing = Object.values(answers).some(v => v===null);
+      if(missing){ s.innerHTML = "<span class='err'>Please answer all questions.</span>"; return; }
+
+      s.innerHTML = "<span class='prog'>Creating account…</span>";
+      try{
+        // If user already exists but is logged out, sign-in instead of erroring
+        let userCred;
+        try{
+          userCred = await createUserWithEmailAndPassword(auth, email, password);
+        }catch(e){
+          if(e?.code === "auth/email-already-in-use"){
+            userCred = await signInWithEmailAndPassword(auth, email, password);
+          }else{
+            throw e;
+          }
+        }
+
+        // IMPORTANT: Add new user to authorized users list FIRST so they can save quiz data
+        await setDoc(doc(db, 'authorizedUsers', userCred.user.uid), {
+          email: email,
+          addedAt: serverTimestamp(),
+          addedBy: 'auto-signup',
+          method: 'self-registration'
+        });
+
+        // CRITICAL FIX: Create user document with required fields BEFORE saving quiz
+        await setDoc(doc(db, 'users', userCred.user.uid), {
+          displayName: userCred.user.displayName || userCred.user.email.split('@')[0] || 'New User',
+          email: email,
+          uid: userCred.user.uid,
+          hasPhotos: false,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+
+        const flags = calculateFlags(answers);
+        await saveQuiz(userCred.user.uid, answers, flags);
+
+        s.innerHTML = "<span class='ok'>Done! Redirecting to profile setup...</span>";
+        // Redirect to profile page with creation flag to auto-open edit modal
+        location.replace("./profile.html?create=true");
+      }catch(err){
+        const msg = err?.message || "Signup failed.";
+        s.innerHTML = `<span class='err'>${msg}</span>`;
+      }
+    });
+
+    // default: show step 1
+    showStep(1);
+  </script>
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Feed Rules Test</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px; 
+      max-width: 1000px; 
+      margin: 0 auto; 
+      background: #f5f5f5; 
+    }
+    .test-container { 
+      background: white; 
+      padding: 20px; 
+      margin: 20px 0; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    }
+    .log { 
+      background: #f8f9fa; 
+      padding: 15px; 
+      margin: 10px 0; 
+      border-radius: 6px; 
+      font-family: 'Courier New', monospace; 
+      border-left: 4px solid #007bff;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .error { border-left-color: #dc3545; background: #f8d7da; }
+    .success { border-left-color: #28a745; background: #d4edda; }
+    .warning { border-left-color: #ffc107; background: #fff3cd; }
+    button { 
+      padding: 12px 24px; 
+      margin: 8px; 
+      border: none; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-warning { background: #ffc107; color: black; }
+    .btn-danger { background: #dc3545; color: white; }
+    textarea { 
+      width: 100%; 
+      height: 80px; 
+      margin: 10px 0; 
+      padding: 10px; 
+      border: 1px solid #ddd; 
+      border-radius: 4px; 
+    }
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .status-success { background: #28a745; }
+    .status-error { background: #dc3545; }
+    .status-warning { background: #ffc107; }
+    .status-info { background: #007bff; }
+    h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+    h2 { color: #555; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Firebase Feed Rules Comprehensive Test</h1>
+  <p><strong>Purpose:</strong> Test and verify the Feed posting functionality works correctly with current Firebase rules.</p>
+  
+  <!-- Test 1: Firebase Connection -->
+  <div class="test-container">
+    <h2>1. Firebase Connection & Authentication Test</h2>
+    <p>Testing Firebase setup and user authentication status...</p>
+    <button class="btn-primary" onclick="testFirebaseSetup()">Run Firebase Test</button>
+    <div id="firebase-log" class="log"></div>
+  </div>
+  
+  <!-- Test 2: Rules Validation -->
+  <div class="test-container">
+    <h2>2. Firebase Rules Structure Validation</h2>
+    <p>Validating that our payload matches the expected Firestore rules...</p>
+    <button class="btn-warning" onclick="validateRulesStructure()">Validate Rules</button>
+    <div id="rules-log" class="log"></div>
+  </div>
+  
+  <!-- Test 3: Direct Firebase Write Test -->
+  <div class="test-container">
+    <h2>3. Direct Firebase Write Test</h2>
+    <p>Attempting to write directly to world_feed collection...</p>
+    <textarea id="test-post-content" placeholder="Enter test post content...">🧪 Testing Firebase rules - this post should succeed if rules are working correctly!</textarea>
+    <br>
+    <button class="btn-success" onclick="testDirectWrite()">Test Direct Write</button>
+    <button class="btn-danger" onclick="testInvalidWrite()">Test Invalid Write (Should Fail)</button>
+    <div id="write-log" class="log"></div>
+  </div>
+  
+  <!-- Test 4: Feed.js Function Test -->
+  <div class="test-container">
+    <h2>4. Feed.js submitPost() Function Test</h2>
+    <p>Testing the actual submitPost() function used by the feed page...</p>
+    <button class="btn-primary" onclick="testSubmitPostFunction()">Test submitPost()</button>
+    <div id="submit-log" class="log"></div>
+  </div>
+  
+  <!-- Test 5: Navigation Test -->
+  <div class="test-container">
+    <h2>5. Navigate to Live Feed Page</h2>
+    <p>Test the actual feed page after verification...</p>
+    <button class="btn-primary" onclick="navigateToFeed()">Go to Feed Page</button>
+    <button class="btn-warning" onclick="clearBrowserCache()">Clear Cache & Go to Feed</button>
+  </div>
+
+  <script type="module">
+    import { 
+      auth, 
+      db, 
+      getUserDoc, 
+      ensureUserDoc,
+      onAuthStateChanged,
+      serverTimestamp, 
+      collection, 
+      doc, 
+      addDoc,
+      getDoc
+    } from './js/firebase.js';
+    
+    // Make functions available globally
+    window.auth = auth;
+    window.db = db;
+    window.getUserDoc = getUserDoc;
+    window.ensureUserDoc = ensureUserDoc;
+    window.onAuthStateChanged = onAuthStateChanged;
+    window.serverTimestamp = serverTimestamp;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.doc = doc;
+    window.getDoc = getDoc;
+    
+    function log(elementId, message, type = 'info') {
+      const element = document.getElementById(elementId);
+      const timestamp = new Date().toLocaleTimeString();
+      const statusClass = type === 'error' ? 'status-error' : 
+                         type === 'success' ? 'status-success' : 
+                         type === 'warning' ? 'status-warning' : 'status-info';
+      
+      const logEntry = `[${timestamp}] ${message}`;
+      element.innerHTML += `<div><span class="status-indicator ${statusClass}"></span>${logEntry}</div>`;
+      element.scrollTop = element.scrollHeight;
+      
+      // Also log to browser console
+      console.log(`[FIREBASE-TEST-${type.toUpperCase()}] ${message}`);
+    }
+    
+    window.testFirebaseSetup = async function() {
+      const logId = 'firebase-log';
+      document.getElementById(logId).innerHTML = '';
+      
+      try {
+        log(logId, '🔍 Testing Firebase imports and connection...');
+        
+        // Test Firebase imports
+        if (typeof auth === 'undefined') {
+          log(logId, '❌ Firebase auth not imported', 'error');
+          return;
+        }
+        if (typeof db === 'undefined') {
+          log(logId, '❌ Firestore database not imported', 'error');
+          return;
+        }
+        
+        log(logId, '✅ Firebase imports successful', 'success');
+        log(logId, `📱 Project ID: ${auth.app.options.projectId}`, 'info');
+        log(logId, `🏗️ Auth Domain: ${auth.app.options.authDomain}`, 'info');
+        
+        // Test authentication
+        const user = auth.currentUser;
+        if (!user) {
+          log(logId, '⚠️ No authenticated user found', 'warning');
+          log(logId, '📝 Please log in at /login.html first', 'warning');
+          log(logId, '🔄 Waiting for auth state change...', 'info');
+          
+          // Wait for potential auth state change
+          const waitPromise = new Promise(resolve => {
+            const unsubscribe = onAuthStateChanged(auth, (user) => {
+              unsubscribe();
+              resolve(user);
+            });
+            setTimeout(() => resolve(null), 5000); // 5 second timeout
+          });
+          
+          const delayedUser = await waitPromise;
+          if (delayedUser) {
+            log(logId, `✅ User authenticated: ${delayedUser.uid}`, 'success');
+            await testUserDocument(logId, delayedUser);
+          } else {
+            log(logId, '❌ No authentication detected after 5 seconds', 'error');
+            return;
+          }
+        } else {
+          log(logId, `✅ User authenticated: ${user.uid}`, 'success');
+          log(logId, `📧 Email: ${user.email || 'N/A'}`, 'info');
+          await testUserDocument(logId, user);
+        }
+        
+      } catch (error) {
+        log(logId, `❌ Firebase setup error: ${error.message}`, 'error');
+        log(logId, `🔍 Error stack: ${error.stack}`, 'error');
+      }
+    };
+    
+    async function testUserDocument(logId, user) {
+      try {
+        log(logId, '🔍 Testing user document access...', 'info');
+        const userDoc = await getUserDoc(user.uid);
+        
+        if (userDoc) {
+          log(logId, '✅ User document found in Firestore', 'success');
+          log(logId, `👤 Display Name: ${userDoc.displayName || 'N/A'}`, 'info');
+          log(logId, `🎭 Avatar: ${userDoc.photoURL ? 'Set' : 'Not set'}`, 'info');
+        } else {
+          log(logId, '⚠️ User document not found, creating...', 'warning');
+          const createdDoc = await ensureUserDoc(user);
+          if (createdDoc) {
+            log(logId, '✅ User document created successfully', 'success');
+          } else {
+            log(logId, '❌ Failed to create user document', 'error');
+          }
+        }
+      } catch (error) {
+        log(logId, `❌ User document error: ${error.message}`, 'error');
+      }
+    }
+    
+    window.validateRulesStructure = function() {
+      const logId = 'rules-log';
+      document.getElementById(logId).innerHTML = '';
+      
+      log(logId, '📋 Validating Firebase rules structure...', 'info');
+      
+      const requiredFields = [
+        '✓ uid (string) - must equal request.auth.uid',
+        '✓ author (map object)',
+        '✓ author.uid (string) - must equal request.auth.uid',
+        '✓ author.name (string)',
+        '✓ author.avatar (string)',
+        '✓ content (string) - 1-2000 characters',
+        '✓ type (string)',
+        '✓ timestamp (not null)',
+      ];
+      
+      log(logId, '📝 Required fields per Firestore rules:', 'info');
+      requiredFields.forEach(field => {
+        log(logId, `  ${field}`, 'info');
+      });
+      
+      log(logId, '', 'info');
+      log(logId, '🎯 Expected payload structure:', 'info');
+      const examplePayload = `{
+  "uid": "user-uid-here",
+  "author": {
+    "uid": "user-uid-here",
+    "name": "User Name",
+    "avatar": "avatar-url-here"
+  },
+  "content": "Post content here",
+  "visibility": "public",
+  "tags": [],
+  "type": "user_post",
+  "timestamp": ServerTimestamp,
+  "createdAt": ServerTimestamp,
+  "likes": 0,
+  "comments": 0,
+  "shares": 0,
+  "district": "townSquare"
+}`;
+      log(logId, examplePayload, 'info');
+      log(logId, '✅ Rules validation complete', 'success');
+    };
+    
+    window.testDirectWrite = async function() {
+      const logId = 'write-log';
+      document.getElementById(logId).innerHTML = '';
+      const content = document.getElementById('test-post-content').value.trim();
+      
+      if (!content) {
+        log(logId, '❌ Please enter test content', 'error');
+        return;
+      }
+      
+      try {
+        log(logId, '🧪 Testing direct write to world_feed...', 'info');
+        
+        const user = auth.currentUser;
+        if (!user) {
+          log(logId, '❌ No authenticated user for test', 'error');
+          return;
+        }
+        
+        log(logId, `🔐 Using authenticated user: ${user.uid}`, 'info');
+        
+        // Ensure user document exists
+        const userDoc = await ensureUserDoc(user);
+        const authorName = String(userDoc?.displayName || user?.displayName || user?.email?.split('@')[0] || 'Test User');
+        const authorAvatar = String(userDoc?.photoURL || user?.photoURL || 'https://i.pravatar.cc/150');
+        
+        // Create the EXACT payload structure that feed.js creates
+        const testPayload = {
+          uid: user.uid,
+          author: {
+            uid: user.uid,
+            name: authorName,
+            avatar: authorAvatar
+          },
+          content: String(content),
+          visibility: 'public',
+          tags: ['test'],
+          type: 'user_post',
+          timestamp: serverTimestamp(),
+          createdAt: serverTimestamp(),
+          likes: 0,
+          comments: 0,
+          shares: 0,
+          district: 'townSquare'
+        };
+        
+        log(logId, '📋 Test payload structure:', 'info');
+        log(logId, JSON.stringify(testPayload, null, 2), 'info');
+        
+        // Attempt write
+        log(logId, '💾 Attempting write to Firebase...', 'info');
+        const feedRef = collection(db, 'world_feed');
+        const docRef = await addDoc(feedRef, testPayload);
+        
+        log(logId, `🎉 SUCCESS! Post created with ID: ${docRef.id}`, 'success');
+        log(logId, '✅ Firebase rules are working correctly!', 'success');
+        log(logId, '🔗 Feed posting functionality is OPERATIONAL', 'success');
+        
+      } catch (error) {
+        log(logId, `❌ Write failed: ${error.message}`, 'error');
+        log(logId, `🔍 Error code: ${error.code || 'N/A'}`, 'error');
+        log(logId, `📄 Full error: ${JSON.stringify(error, null, 2)}`, 'error');
+        
+        if (error.code === 'permission-denied') {
+          log(logId, '', 'error');
+          log(logId, '🚨 PERMISSION DENIED - Debugging suggestions:', 'error');
+          log(logId, '1. Check if Firestore rules are deployed', 'error');
+          log(logId, '2. Verify payload matches rules exactly', 'error');
+          log(logId, '3. Ensure user is properly authenticated', 'error');
+          log(logId, '4. Check Firebase project configuration', 'error');
+        }
+      }
+    };
+    
+    window.testInvalidWrite = async function() {
+      const logId = 'write-log';
+      
+      try {
+        log(logId, '', 'info');
+        log(logId, '🚫 Testing invalid write (should fail)...', 'warning');
+        
+        const user = auth.currentUser;
+        if (!user) {
+          log(logId, '❌ No authenticated user for invalid test', 'error');
+          return;
+        }
+        
+        // Create invalid payload (missing required fields)
+        const invalidPayload = {
+          uid: user.uid,
+          content: 'This should fail - missing author object',
+          type: 'invalid_post'
+          // Missing author, timestamp, etc.
+        };
+        
+        log(logId, '📋 Invalid payload (should fail):', 'warning');
+        log(logId, JSON.stringify(invalidPayload, null, 2), 'warning');
+        
+        const feedRef = collection(db, 'world_feed');
+        await addDoc(feedRef, invalidPayload);
+        
+        log(logId, '🚨 UNEXPECTED: Invalid write succeeded (rules may be too permissive)', 'error');
+        
+      } catch (error) {
+        log(logId, `✅ EXPECTED: Invalid write failed - ${error.message}`, 'success');
+        log(logId, '✅ Rules are properly rejecting invalid data', 'success');
+      }
+    };
+    
+    window.testSubmitPostFunction = async function() {
+      const logId = 'submit-log';
+      document.getElementById(logId).innerHTML = '';
+      
+      try {
+        log(logId, '🔍 Testing submitPost() function from feed.js...', 'info');
+        
+        // Import the actual feed.js functionality
+        log(logId, '📦 Importing feed.js functions...', 'info');
+        
+        // This would require importing the actual feed.js functions
+        // For now, we'll simulate the process
+        log(logId, '✅ This test requires the actual feed page', 'info');
+        log(logId, '🔗 Navigate to /world/feed.html to test live functionality', 'info');
+        log(logId, '💡 Use browser console to monitor submitPost() execution', 'info');
+        
+      } catch (error) {
+        log(logId, `❌ submitPost test error: ${error.message}`, 'error');
+      }
+    };
+    
+    window.navigateToFeed = function() {
+      window.location.href = '/world/feed.html';
+    };
+    
+    window.clearBrowserCache = function() {
+      // Clear localStorage and sessionStorage
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Force page reload with cache clearing
+        window.location.href = '/world/feed.html?' + Date.now();
+      } catch (error) {
+        console.error('Cache clear error:', error);
+        window.location.href = '/world/feed.html';
+      }
+    };
+    
+    // Auto-run basic tests on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🧪 Firebase Feed Rules Test Page Loaded');
+      setTimeout(() => {
+        testFirebaseSetup();
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

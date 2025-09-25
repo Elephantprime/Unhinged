@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- META -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UNHINGED — Date like a game</title>
+  <meta name="description" content="Radically honest dating. Post your red flags first. If they still want you after this… game on." />
+  <meta name="theme-color" content="#E11D2A" />
+
+  <!-- STYLES -->
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root{
+      --red:#E11D2A; --yellow:#F6C31C; --ink:#0F0F12; --charcoal:#141418;
+      --card:#161821; --muted:#b8b9c6; --radius:18px; --shadow:0 14px 36px rgba(0,0,0,.28)
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:linear-gradient(180deg,#0e0e12,#141418);color:#fff;font:500 16px/1.5 Inter,system-ui,Segoe UI,Roboto,Arial}
+    a{color:inherit;text-decoration:none}
+    img{max-width:100%;display:block}
+
+    .wrap{max-width:1120px;margin:0 auto;padding:18px}
+    header{border-bottom:1px solid rgba(255,255,255,.06)}
+    .bar{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .logo{display:flex;align-items:center;gap:10px}
+    .mark{width:28px;height:28px;background:conic-gradient(from 180deg at 50% 50%, var(--red) 0 75%, #8b0e16 75% 100%);border-radius:8px;box-shadow:0 6px 22px rgba(225,29,42,.35)}
+    .word{font-weight:1000;letter-spacing:.02em}
+    nav{display:flex;gap:10px;flex-wrap:wrap}
+    /* Modern buttons now loaded from style.css */
+
+    /* HERO */
+    .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:center;padding:26px 0}
+    .eyebrow{display:inline-block;font-size:12px;letter-spacing:.16em;color:var(--yellow);font-weight:800;border:1px solid rgba(246,195,28,.3);padding:6px 10px;border-radius:999px;background:rgba(246,195,28,.1)}
+    .hero h1{font-size:48px;line-height:1.05;margin:10px 0 8px}
+    .lede{color:#e4e5f0;opacity:.93}
+    .cta{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+    .card{background:linear-gradient(180deg,var(--card),#141620);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .card-body{padding:14px}
+
+    /* profile carousel (visual only) */
+    .carousel{display:flex;gap:12px;overflow:auto;padding:8px}
+    .carousel::-webkit-scrollbar{height:8px}
+    .carousel::-webkit-scrollbar-thumb{background:#2a2b36;border-radius:999px}
+    .pcard{min-width:220px;max-width:220px;background:#16171d;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden}
+    .pcard .imgwrap{position:relative;height:180px}
+    .pcard img{width:100%;height:100%;object-fit:cover}
+    .chiprow{position:absolute;left:8px;bottom:8px;display:flex;gap:6px;flex-wrap:wrap}
+    .chip{background:#E11D2A;color:#fff;font-size:11px;padding:4px 8px;border-radius:999px}
+    .pcard .body{padding:10px}
+    .meta{font-size:12px;color:#cfd0de}
+
+    /* GRID */
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .tile h3{margin:8px 0 6px}
+    .sub{color:var(--muted)}
+    .tilt{transform:rotate(-1.2deg)}
+    .tilt.r{transform:rotate(1.8deg)}
+
+    /* Social proof */
+    .review{background:#15161b;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px}
+    .rhead{display:flex;justify-content:space-between;align-items:center}
+    .flames{color:#ff5b40;font-weight:900}
+
+    /* Pricing teaser */
+    .pricing{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:10px}
+    .price{padding:16px;text-align:center}
+    .price h4{margin:6px 0 6px}
+    .tag{display:inline-block;font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.16)}
+    .best{background:rgba(246,195,28,.1);border-color:rgba(246,195,28,.4);color:#ffd66b}
+
+    /* CTA banner */
+    .banner{padding:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+
+    /* Footer */
+    footer{padding:24px 0;border-top:1px solid rgba(255,255,255,.06);opacity:.9;margin-top:24px}
+
+    /* Responsive */
+    @media (max-width:1180px){ .pricing{grid-template-columns:1fr 1fr} }
+    @media (max-width:1020px){ .grid{grid-template-columns:1fr 1fr} .hero{grid-template-columns:1fr} .hero h1{font-size:38px} }
+    @media (max-width:680px){ .grid,.pricing{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="wrap bar">
+      <div class="logo">
+        <div class="mark"></div>
+        <div class="word">UNHINGED</div>
+      </div>
+      <nav>
+        <a class="btn" href="./login.html">Log in</a>
+        <a class="btn primary" href="./signup.html">Join</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- HERO -->
+    <section aria-labelledby="heroTitle">
+      <div class="hero">
+        <div>
+          <span class="eyebrow">DATE LIKE A GAME</span>
+          <h1 id="heroTitle">Post your red flags first. See who still plays.</h1>
+          <p class="lede">Radically honest profiles, chaos-forward features, and receipts-only DMs. If they still want you after this… game on.</p>
+          <div class="cta">
+            <a class="btn primary" href="./signup.html">Get started</a>
+            <a class="btn ghost" href="./login.html">I already have an account</a>
+            <a class="btn ghost" href="./donate.html#affiliate">Affiliate</a>
+            <a class="btn ghost" href="./donate.html#advertising">Advertising</a>
+            <a class="btn primary" href="./donate.html#investor">Real Investor</a>
+          </div>
+        </div>
+
+        <!-- Visual carousel (static images for vibe only) -->
+        <div class="card tilt">
+          <div class="carousel" aria-label="Sample profiles">
+            <div class="pcard">
+              <div class="imgwrap">
+                <img alt="" src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200&auto=format&fit=crop">
+                <div class="chiprow">
+                  <span class="chip">Drama Magnet</span>
+                  <span class="chip">Receipts-Only</span>
+                </div>
+              </div>
+              <div class="body">
+                <strong>Jamie, 27</strong>
+                <div class="meta">7/10 chaos</div>
+              </div>
+            </div>
+            <div class="pcard">
+              <div class="imgwrap">
+                <img alt="" src="https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?q=80&w=1200&auto=format&fit=crop">
+                <div class="chiprow">
+                  <span class="chip">Financial Chaos</span>
+                  <span class="chip">Gym @5am</span>
+                </div>
+              </div>
+              <div class="body">
+                <strong>Andre, 31</strong>
+                <div class="meta">6/10 chaos</div>
+              </div>
+            </div>
+            <div class="pcard">
+              <div class="imgwrap">
+                <img alt="" src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=1200&auto=format&fit=crop">
+                <div class="chiprow">
+                  <span class="chip">Most Ghosted</span>
+                  <span class="chip">Receipts-Ready</span>
+                </div>
+              </div>
+              <div class="body">
+                <strong>Rae, 25</strong>
+                <div class="meta">8/10 chaos</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /carousel -->
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section aria-labelledby="featuresTitle">
+      <h2 id="featuresTitle" style="margin:10px 0 10px">Why people pick Unhinged</h2>
+      <div class="grid">
+        <article class="card tile tilt">
+          <div class="card-body">
+            <h3>Radical Honesty</h3>
+            <p class="sub">Lead with your red flags. If they still swipe, you’re already aligned.</p>
+          </div>
+        </article>
+        <article class="card tile tilt r">
+          <div class="card-body">
+            <h3>Receipts-Only DMs</h3>
+            <p class="sub">Read receipts by default and nudges that beat ghosting.</p>
+          </div>
+        </article>
+        <article class="card tile tilt">
+          <div class="card-body">
+            <h3>Chaos Board</h3>
+            <p class="sub">Pin your best dating stories. See who still wants to play after the honesty.</p>
+          </div>
+        </article>
+        <article class="card tile tilt r">
+          <div class="card-body">
+            <h3>Live Chat Rooms</h3>
+            <p class="sub">Drop into themed rooms and meet faster—no awkward small talk.</p>
+          </div>
+        </article>
+        <article class="card tile tilt">
+          <div class="card-body">
+            <h3>Verification & Badges</h3>
+            <p class="sub">Earn flair for verified vibes and consistent replies.</p>
+          </div>
+        </article>
+        <article class="card tile tilt r">
+          <div class="card-body">
+            <h3>Reviews (opt-in)</h3>
+            <p class="sub">Collect (or read) gentle receipts. Keep things respectful—or get benched.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- SOCIAL PROOF -->
+    <section aria-labelledby="reviewsTitle" style="margin-top:22px">
+      <h2 id="reviewsTitle" style="margin:0 0 8px">People are kinda into this</h2>
+      <div class="grid">
+        <div class="review tilt">
+          <div class="rhead"><strong>@Jamie27</strong><span class="flames">🔥🔥🔥</span></div>
+          <p class="sub" style="margin:8px 0 0">“Fun, chaotic, disappears for weeks. 7/10 would text again.”</p>
+        </div>
+        <div class="review tilt r">
+          <div class="rhead"><strong>@Andre31</strong><span class="flames">🔥🔥</span></div>
+          <p class="sub" style="margin:8px 0 0">“Nice but schedules dates like a crypto chart.”</p>
+        </div>
+        <div class="review tilt">
+          <div class="rhead"><strong>@Rae25</strong><span class="flames">🔥🔥🔥🔥</span></div>
+          <p class="sub" style="margin:8px 0 0">“Screenshots. For. Everything.”</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRICING TEASER -->
+    <section aria-labelledby="pricingTitle" style="margin-top:28px">
+      <h2 id="pricingTitle" style="margin:0 0 8px">Pricing (beta-friendly)</h2>
+      <div class="pricing">
+        <div class="card price tilt">
+          <span class="tag best">Founder Offer</span>
+          <h4 style="margin-top:10px">$150 — Lifetime</h4>
+          <p class="sub">All features forever. Limited early-supporter deal.</p>
+          <div style="margin-top:12px"><a class="btn primary" href="./signup.html">Claim Founder</a></div>
+        </div>
+        <div class="card price tilt r">
+          <h4>$19 / month</h4>
+          <p class="sub">Everything you need to play (and win) the dating game.</p>
+          <div style="margin-top:12px"><a class="btn primary" href="./signup.html">Start Monthly</a></div>
+        </div>
+        <div class="card price tilt">
+          <h4>$9 / month — Starter</h4>
+          <p class="sub">Dip your toes in the chaos.</p>
+          <div style="margin-top:12px"><a class="btn" href="./signup.html">Try Starter</a></div>
+        </div>
+        <div class="card price tilt">
+          <h4>Free</h4>
+          <p class="sub">Create a profile and browse the vibes.</p>
+          <div style="margin-top:12px"><a class="btn" href="./signup.html">Join Free</a></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA BANNER -->
+    <section aria-labelledby="ctaTitle" style="margin-top:28px">
+      <div class="card banner">
+        <div>
+          <h2 id="ctaTitle" style="margin:0 0 6px">Ready to play honestly?</h2>
+          <p class="sub" style="margin:0">Own your chaos. Meet your match.</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn primary" href="./signup.html">Create account</a>
+          <a class="btn" href="./login.html">Log in</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="wrap" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <small>© <span id="y"></span> Unhinged</small>
+      <div class="sub">Made with poor decisions and great taste.</div>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { auth, getUserDoc } from "./js/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { isProfileComplete } from "./js/profile_lock.js";
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userDoc = await getUserDoc(user.uid);
+          if (isProfileComplete(userDoc)) {
+            window.location.href = "./app.html";
+          } else {
+            window.location.href = "./profile.html";
+          }
+        } catch (error) {
+          console.error('Error checking profile:', error);
+          window.location.href = "./profile.html";
+        }
+      }
+    });
+  </script>
+</body>
+</html>

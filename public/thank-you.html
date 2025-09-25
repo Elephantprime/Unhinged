@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- ===== SECTION: Head / Meta ===== -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thank You — Unhinged</title>
+
+  <!-- ===== SECTION: Styles (Design System) ===== -->
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root { --bg:#0e0e12; --panel:#15161b; --muted:#cfd0de; --red:#E11D2A; --green:#9ae6b4; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center}
+    a{color:#9ecbff;text-decoration:none}
+    .wrap{width:100%;max-width:480px;padding:16px}
+    .card{background:var(--panel);border:1px solid #2a2a2a;border-radius:14px;padding:24px;text-align:center}
+    .success-icon{font-size:4rem;margin-bottom:16px;background:linear-gradient(135deg,#9ae6b4,#68d391);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .title{font-weight:800;font-size:1.5rem;margin-bottom:8px;color:var(--green)}
+    .message{color:var(--muted);font-size:1rem;line-height:1.4;margin-bottom:20px}
+    .features{text-align:left;background:#12131a;border:1px solid #2a2a2a;border-radius:10px;padding:16px;margin:20px 0}
+    .feature{display:flex;align-items:center;margin-bottom:10px;font-size:.9rem}
+    .feature:last-child{margin-bottom:0}
+    .feature-icon{margin-right:10px;font-size:1.1rem}
+    .actions{display:flex;gap:10px;justify-content:center;margin-top:20px}
+    .footer{margin-top:20px;padding-top:20px;border-top:1px solid #2a2a2a;font-size:.85rem;color:#888}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <!-- ===== SECTION: Success Message ===== -->
+      <div class="success-icon">💖</div>
+      <div class="title">Thank You!</div>
+      <div class="message">
+        Your support means the world to us. Thanks to contributors like you, 
+        we can keep Unhinged running and add amazing new features.
+      </div>
+
+      <!-- ===== SECTION: What Your Support Enables ===== -->
+      <div class="features">
+        <div class="feature">
+          <span class="feature-icon">🚀</span>
+          <span>Server hosting & infrastructure</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">✨</span>
+          <span>New features & improvements</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🛡️</span>
+          <span>Security & data protection</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">👥</span>
+          <span>Community moderation tools</span>
+        </div>
+      </div>
+
+      <!-- ===== SECTION: Actions ===== -->
+      <div class="actions">
+        <button class="btn secondary" onclick="location.href='./login.html'">Back to Login</button>
+        <button class="btn" onclick="location.href='./app.html'">Start Dating</button>
+      </div>
+
+      <!-- ===== SECTION: Footer ===== -->
+      <div class="footer">
+        Your payment was processed securely by Square.<br>
+        No payment information is stored on our servers.
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION: Scripts ===== -->
+  <script type="module">
+    // Check if user is already authenticated and redirect appropriately
+    import { auth } from "./js/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    onAuthStateChanged(auth, (user) => {
+      const startBtn = document.querySelector('.btn:not(.secondary)');
+      const backBtn = document.querySelector('.btn.secondary');
+      
+      if (user) {
+        // User is logged in, they can go straight to the app
+        startBtn.textContent = 'Continue to App';
+        startBtn.onclick = () => location.href = './app.html';
+        backBtn.textContent = 'Back to Profile';
+        backBtn.onclick = () => location.href = './profile.html';
+      } else {
+        // User not logged in, they need to login first
+        startBtn.textContent = 'Sign In to Start';
+        startBtn.onclick = () => location.href = './login.html';
+        backBtn.textContent = 'Back to Login';
+        backBtn.onclick = () => location.href = './login.html';
+      }
+    });
+
+    // Add a subtle animation
+    setTimeout(() => {
+      document.querySelector('.card').style.transform = 'scale(1.02)';
+      document.querySelector('.card').style.transition = 'transform 0.3s ease';
+      setTimeout(() => {
+        document.querySelector('.card').style.transform = 'scale(1)';
+      }, 300);
+    }, 100);
+  </script>
+</body>
+</html>
