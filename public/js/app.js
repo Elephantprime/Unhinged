@@ -219,6 +219,33 @@ function setupEventListeners() {
   console.log('✅ Event listeners set up safely');
 }
 
+// Live stream chat control functions
+function minimizeLiveStreamChat() {
+  const chatContainer = document.getElementById('liveStreamChatContainer');
+  if (chatContainer) {
+    chatContainer.style.height = '40px';
+    chatContainer.style.overflow = 'hidden';
+    console.log('📉 Live stream chat minimized');
+  }
+}
+
+function maximizeLiveStreamChat() {
+  const chatContainer = document.getElementById('liveStreamChatContainer');
+  if (chatContainer) {
+    chatContainer.style.height = 'auto';
+    chatContainer.style.overflow = 'visible';
+    console.log('📈 Live stream chat maximized');
+  }
+}
+
+function closeLiveStreamChat() {
+  const chatContainer = document.getElementById('liveStreamChatContainer');
+  if (chatContainer) {
+    chatContainer.style.display = 'none';
+    console.log('❌ Live stream chat closed');
+  }
+}
+
 async function initializeAuth() {
   console.log('🔐 Initializing authentication...');
   
