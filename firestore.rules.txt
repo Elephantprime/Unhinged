@@ -1,0 +1,2057 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ===== COMPREHENSIVE SECURITY HELPERS ===== */
+    function signedIn() { return request.auth != null; }
+    function isOwner(userId) { return signedIn() && request.auth.uid == userId; }
+    
+    function isAdmin() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true;
+    }
+    
+    function isModerator() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isModerator', false) == true;
+    }
+    
+    function isSuperAdmin() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isSuperAdmin', false) == true;
+    }
+    
+    function isContentModerator() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isContentModerator', false) == true;
+    }
+    
+    function isCommunityManager() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isCommunityManager', false) == true;
+    }
+    
+    function isAdminOrModerator() {
+      return isAdmin() || isModerator() || isSuperAdmin();
+    }
+    
+    function isStaff() {
+      return isAdmin() || isModerator() || isSuperAdmin() || isContentModerator() || isCommunityManager();
+    }
+    
+    function isVerifiedUser() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isVerified', false) == true;
+    }
+    
+    function isPremiumUser() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isPremium', false) == true;
+    }
+    
+    function isVipUser() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isVip', false) == true;
+    }
+    
+    function hasSubscription() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('hasActiveSubscription', false) == true;
+    }
+    
+    function isBusinessAccount() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'business';
+    }
+    
+    function isInfluencerAccount() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'influencer';
+    }
+    
+    function isCreatorAccount() {
+      return signedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'creator';
+    }
+    
+    function canModerateContent() {
+      return isStaff() || isContentModerator();
+    }
+    
+    function canAccessPremiumFeatures() {
+      return isPremiumUser() || isVipUser() || hasSubscription() || isStaff();
+    }
+    
+    function fieldUnchanged(field) {
+      return (field in resource.data) &&
+             ( !(field in request.resource.data) ||
+               request.resource.data[field] == resource.data[field] );
+    }
+    
+    function protectedFieldsUnchanged() {
+      return fieldUnchanged('membership') &&
+             fieldUnchanged('isAdmin') &&
+             fieldUnchanged('isModerator') &&
+             fieldUnchanged('isSuperAdmin') &&
+             fieldUnchanged('isVerified') &&
+             fieldUnchanged('isPremium') &&
+             fieldUnchanged('isVip') &&
+             fieldUnchanged('credits') &&
+             fieldUnchanged('points') &&
+             fieldUnchanged('level') &&
+             fieldUnchanged('reputation');
+    }
+    
+    function reqMsgAuthor() {
+      return (request.resource.data.uid != null)
+             ? request.resource.data.uid
+             : request.resource.data.senderId;
+    }
+    
+    function resMsgAuthor() {
+      return (resource.data.uid != null)
+             ? resource.data.uid
+             : resource.data.senderId;
+    }
+    
+    
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function validateStringLength(field, maxLength) {
+      return !(field in request.resource.data) || 
+             request.resource.data[field].size() <= maxLength;
+    }
+    
+    function isValidEmail(email) {
+      return email.matches('.*@.*\\..*');
+    }
+    
+    function isValidAge(age) {
+      return age >= 18 && age <= 100;
+    }
+    
+    function isValidPhoneNumber(phone) {
+      return phone.matches('\\+?[0-9]{10,15}');
+    }
+
+    /* ===== USER MANAGEMENT SYSTEM ===== */
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create: if isOwner(userId) &&
+        !('membership' in request.resource.data) &&
+        !('isAdmin' in request.resource.data) &&
+        !('isModerator' in request.resource.data) &&
+        !('isSuperAdmin' in request.resource.data) &&
+        !('isVerified' in request.resource.data) &&
+        !('isPremium' in request.resource.data) &&
+        !('isVip' in request.resource.data) &&
+        !('credits' in request.resource.data) &&
+        !('points' in request.resource.data) &&
+        !('level' in request.resource.data) &&
+        !('reputation' in request.resource.data) &&
+        hasRequiredFields(['displayName', 'email']) &&
+        validateStringLength('displayName', 50) &&
+        validateStringLength('bio', 500) &&
+        isValidEmail(request.resource.data.email) &&
+        (('age' in request.resource.data) ? isValidAge(request.resource.data.age) : true) &&
+        (('phoneNumber' in request.resource.data) ? isValidPhoneNumber(request.resource.data.phoneNumber) : true);
+      allow update: if isOwner(userId) &&
+        protectedFieldsUnchanged() &&
+        validateStringLength('displayName', 50) &&
+        validateStringLength('bio', 500) &&
+        (('age' in request.resource.data) ? isValidAge(request.resource.data.age) : true) &&
+        (('phoneNumber' in request.resource.data) ? isValidPhoneNumber(request.resource.data.phoneNumber) : true);
+      allow delete: if isOwner(userId) || isSuperAdmin();
+    }
+
+    // Private user data subcollections
+    match /users/{userId}/private/{document} {
+      allow read, write: if isOwner(userId) || isSuperAdmin();
+    }
+    
+    // User settings
+    match /users/{userId}/settings/{settingId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // User preferences
+    match /users/{userId}/preferences/{preferenceId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // User activity logs
+    match /users/{userId}/activities/{activityId} {
+      allow read: if isOwner(userId) || isStaff();
+      allow create: if isOwner(userId) || isStaff();
+      allow update, delete: if isStaff();
+    }
+    
+    // User achievements
+    match /users/{userId}/achievements/{achievementId} {
+      allow read: if signedIn();
+      allow create, update: if isStaff() || (isOwner(userId) && request.resource.data.type != 'admin_awarded');
+      allow delete: if isStaff();
+    }
+    
+    // User badges
+    match /users/{userId}/badges/{badgeId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // User connections/friends
+    match /users/{userId}/connections/{connectionId} {
+      allow read: if isOwner(userId) || signedIn();
+      allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid;
+      allow update: if signedIn() && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow delete: if signedIn() && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+    }
+
+    /* ===== ADMIN & MODERATION SYSTEM ===== */
+    match /system_admins/{userId} {
+      allow read: if isAdmin() || isSuperAdmin();
+      allow write: if false; // Only system can create admins
+    }
+    
+    match /super_admins/{userId} {
+      allow read: if isSuperAdmin();
+      allow write: if false; // Only system can create super admins
+    }
+    
+    match /moderators/{userId} {
+      allow read: if isStaff();
+      allow create, update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+    
+    match /content_moderators/{userId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isAdmin() || isSuperAdmin();
+    }
+    
+    match /community_managers/{userId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isAdmin() || isSuperAdmin();
+    }
+    
+    match /admin_actions/{actionId} {
+      allow read: if isStaff();
+      allow create: if isStaff() && request.resource.data.adminUid == request.auth.uid;
+      allow update, delete: if isSuperAdmin();
+    }
+    
+    match /moderation_queue/{itemId} {
+      allow read: if canModerateContent();
+      allow create: if signedIn();
+      allow update: if canModerateContent() && request.resource.data.moderatedBy == request.auth.uid;
+      allow delete: if isAdmin() || isSuperAdmin();
+    }
+    
+    match /content_reports/{reportId} {
+      allow read: if canModerateContent() || (resource.data.reportedBy == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.reportedBy == request.auth.uid;
+      allow update: if canModerateContent();
+      allow delete: if isAdmin() || isSuperAdmin();
+    }
+    
+    match /user_reports/{reportId} {
+      allow read: if canModerateContent() || (resource.data.reportedBy == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.reportedBy == request.auth.uid;
+      allow update: if canModerateContent();
+      allow delete: if isAdmin() || isSuperAdmin();
+    }
+    
+    match /ban_appeals/{appealId} {
+      allow read: if canModerateContent() || (resource.data.userId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if canModerateContent();
+      allow delete: if isAdmin() || isSuperAdmin();
+    }
+    
+    match /user_warnings/{warningId} {
+      allow read: if canModerateContent() || (resource.data.userId == request.auth.uid);
+      allow create, update: if canModerateContent();
+      allow delete: if isAdmin() || isSuperAdmin();
+    }
+    
+    match /user_suspensions/{suspensionId} {
+      allow read: if canModerateContent() || (resource.data.userId == request.auth.uid);
+      allow create, update: if isAdmin() || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+    
+    match /user_bans/{banId} {
+      allow read: if canModerateContent() || (resource.data.userId == request.auth.uid);
+      allow create, update: if isAdmin() || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    /* ===== AUTHORIZATION & VERIFICATION SYSTEM ===== */
+    match /authorizedUsers/{userId} {
+      allow read: if isOwner(userId) || isStaff();
+      allow create: if signedIn() && isOwner(userId);
+      allow update: if isOwner(userId) || isStaff();
+      allow delete: if isStaff();
+    }
+    
+    match /verification_requests/{requestId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isStaff();
+      allow delete: if isStaff();
+    }
+    
+    match /identity_verifications/{verificationId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isStaff();
+      allow delete: if isStaff();
+    }
+    
+    match /phone_verifications/{verificationId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) || isStaff();
+      allow delete: if isStaff();
+    }
+    
+    match /email_verifications/{verificationId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) || isStaff();
+      allow delete: if isStaff();
+    }
+    
+    match /background_checks/{checkId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isStaff();
+      allow delete: if isSuperAdmin();
+    }
+    
+    match /safety_certifications/{certId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create, update: if isStaff();
+      allow delete: if isSuperAdmin();
+    }
+
+    /* ===== USER PRESENCE & SESSION MANAGEMENT ===== */
+    match /presence/{userId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isOwner(userId);
+    }
+    
+    match /user_sessions/{sessionId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    match /active_sessions/{sessionId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create, update: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    match /device_tokens/{tokenId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create, update: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    match /login_history/{historyId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isStaff();
+    }
+
+    /* ===== CLEAN SIMPLE MATCHING SYSTEM (User's Implementation) ===== */
+    // Simple likes collection
+    match /likes/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    // Simple views collection
+    match /views/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    // Simple matches collection
+    match /matches/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    // Simple recycling collection
+    match /recycling/{docId} {
+      allow read, write: if signedIn();
+    }
+    
+    // Super likes
+    match /super_likes/{superLikeId} {
+      allow read: if signedIn() && (
+        resource.data.fromUid == request.auth.uid || 
+        resource.data.toUid == request.auth.uid
+      );
+      allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid && canAccessPremiumFeatures();
+      allow update: if signedIn() && resource.data.fromUid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.fromUid == request.auth.uid;
+    }
+    
+    // Match preferences
+    match /match_preferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Compatibility scores
+    match /compatibility_scores/{scoreId} {
+      allow read: if signedIn() && (
+        resource.data.user1 == request.auth.uid || 
+        resource.data.user2 == request.auth.uid
+      );
+      allow create, update: if isStaff(); // System generated
+      allow delete: if isStaff();
+    }
+    
+    // Dating profile visibility
+    match /profile_visibility/{userId} {
+      allow read: if signedIn();
+      allow write: if isOwner(userId);
+    }
+    
+    // Boost features
+    match /profile_boosts/{boostId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid && canAccessPremiumFeatures();
+      allow update, delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    /* ===== COMPREHENSIVE CHAT SYSTEM ===== */
+    // Main chat conversations
+    match /chats/{chatId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.uids;
+      allow create: if signedIn() && request.auth.uid in request.resource.data.uids;
+      allow update: if signedIn() && request.auth.uid in resource.data.uids;
+      allow delete: if signedIn() && request.auth.uid in resource.data.uids;
+    }
+
+    // Chat messages
+    match /chats/{chatId}/messages/{messageId} {
+      allow read: if signedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.uids;
+      allow create: if signedIn() && 
+        request.resource.data.senderUid == request.auth.uid &&
+        request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.uids;
+      allow update: if signedIn() && resource.data.senderUid == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.senderUid == request.auth.uid || isStaff());
+    }
+    
+    // Chat message reactions
+    match /chats/{chatId}/messages/{messageId}/reactions/{reactionId} {
+      allow read: if signedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.uids;
+      allow create: if signedIn() && 
+        request.resource.data.userId == request.auth.uid &&
+        request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.uids;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    // Chat attachments
+    match /chats/{chatId}/attachments/{attachmentId} {
+      allow read: if signedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.uids;
+      allow create: if signedIn() && 
+        request.resource.data.uploadedBy == request.auth.uid &&
+        request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.uids;
+      allow update, delete: if signedIn() && (resource.data.uploadedBy == request.auth.uid || isStaff());
+    }
+    
+    // Voice messages
+    match /voice_messages/{messageId} {
+      allow read: if signedIn() && (
+        resource.data.senderUid == request.auth.uid ||
+        resource.data.recipientUid == request.auth.uid
+      );
+      allow create: if signedIn() && request.resource.data.senderUid == request.auth.uid;
+      allow update: if signedIn() && resource.data.senderUid == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.senderUid == request.auth.uid || isStaff());
+    }
+    
+    // Video messages
+    match /video_messages/{messageId} {
+      allow read: if signedIn() && (
+        resource.data.senderUid == request.auth.uid ||
+        resource.data.recipientUid == request.auth.uid
+      );
+      allow create: if signedIn() && request.resource.data.senderUid == request.auth.uid;
+      allow update: if signedIn() && resource.data.senderUid == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.senderUid == request.auth.uid || isStaff());
+    }
+    
+    // Message threads
+    match /message_threads/{threadId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+      allow create: if signedIn() && request.auth.uid in request.resource.data.participants;
+      allow update: if signedIn() && request.auth.uid in resource.data.participants;
+      allow delete: if signedIn() && (resource.data.createdBy == request.auth.uid || isStaff());
+    }
+
+    /* ===== COMMUNITY FEATURES ===== */
+    // Community rooms/groups
+    match /rooms/{roomId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if signedIn() &&
+        (request.auth.uid == resource.data.get('ownerId', null) || isStaff());
+    }
+
+    // Room members
+    match /rooms/{roomId}/members/{memberId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && 
+        request.auth.uid == memberId && 
+        request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && (request.auth.uid == memberId || request.auth.uid == resource.data.uid || isStaff());
+    }
+
+    // Room messages
+    match /rooms/{roomId}/messages/{msgId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && reqMsgAuthor() == request.auth.uid;
+      allow update, delete: if signedIn() && (resMsgAuthor() == request.auth.uid || isStaff());
+    }
+    
+    // Room moderators
+    match /rooms/{roomId}/moderators/{modId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && (
+        request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
+        isStaff()
+      );
+      allow update, delete: if signedIn() && (
+        request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
+        isStaff()
+      );
+    }
+    
+    // Room events
+    match /rooms/{roomId}/events/{eventId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && (
+        request.resource.data.createdBy == request.auth.uid ||
+        request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId
+      );
+      allow update, delete: if signedIn() && (
+        resource.data.createdBy == request.auth.uid ||
+        request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
+        isStaff()
+      );
+    }
+    
+    // Room polls
+    match /rooms/{roomId}/polls/{pollId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.createdBy == request.auth.uid || isStaff());
+    }
+    
+    // Room poll votes
+    match /rooms/{roomId}/polls/{pollId}/votes/{voteId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    /* ===== LIVE STREAMING SYSTEM ===== */
+    match /liveStreams/{streamId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.streamerUid == request.auth.uid;
+      allow update: if signedIn() && (
+        (resource.data.streamerUid == request.auth.uid && fieldUnchanged('streamerUid')) ||
+        isStaff()
+      );
+      allow delete: if signedIn() &&
+        (resource.data.streamerUid == request.auth.uid || isStaff());
+    }
+
+    // Live stream chat
+    match /liveStreams/{streamId}/chat/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() &&
+        (resource.data.uid == request.auth.uid || isStaff());
+    }
+
+    // Live stream viewers
+    match /liveStreamViewers/{viewerId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() &&
+        (resource.data.uid == request.auth.uid || isStaff());
+    }
+
+    // Active streams tracking
+    match /activeStreams/{streamId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+    }
+
+    // Global streams tracking
+    match /globalStreams/{streamId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+    }
+    
+    // Stream highlights
+    match /stream_highlights/{highlightId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.streamerId == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.streamerId == request.auth.uid || isStaff());
+    }
+    
+    // Stream recordings
+    match /stream_recordings/{recordingId} {
+      allow read: if signedIn() && (
+        resource.data.streamerId == request.auth.uid ||
+        resource.data.isPublic == true ||
+        canAccessPremiumFeatures()
+      );
+      allow create: if signedIn() && request.resource.data.streamerId == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.streamerId == request.auth.uid || isStaff());
+    }
+    
+    // Stream donations
+    match /stream_donations/{donationId} {
+      allow read: if signedIn() && (
+        resource.data.donorId == request.auth.uid ||
+        resource.data.streamerId == request.auth.uid ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.donorId == request.auth.uid;
+      allow update: if isStaff();
+      allow delete: if isStaff();
+    }
+    
+    // Stream subscribers
+    match /stream_subscribers/{subscriptionId} {
+      allow read: if signedIn() && (
+        resource.data.subscriberId == request.auth.uid ||
+        resource.data.streamerId == request.auth.uid
+      );
+      allow create: if signedIn() && request.resource.data.subscriberId == request.auth.uid;
+      allow update: if signedIn() && resource.data.subscriberId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.subscriberId == request.auth.uid || isStaff());
+    }
+
+    /* ===== WEBRTC SIGNALING SYSTEM ===== */
+    match /webrtcSignals/{signalId} {
+      allow read: if signedIn() && (
+        request.auth.uid == resource.data.get('from', null) ||
+        request.auth.uid == resource.data.get('to', null)
+      );
+      allow create: if signedIn() && request.auth.uid == request.resource.data.from;
+      allow update, delete: if signedIn() && request.auth.uid == resource.data.get('from', null);
+    }
+
+    match /liveStreamSignals/{signalId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == request.resource.data.from;
+      allow update, delete: if false;
+    }
+
+    match /liveStreamSignals/{signalId}/candidates/{cid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == request.resource.data.from;
+      allow update, delete: if false;
+    }
+
+    // Live stream offers
+    match /liveStreamSignals/{signalId}/offers/{offerId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == request.resource.data.from;
+      allow update, delete: if false;
+    }
+
+    // Live stream answers
+    match /liveStreamSignals/{signalId}/answers/{answerId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == request.resource.data.from;
+      allow update, delete: if false;
+    }
+    
+    // Video call sessions
+    match /video_calls/{callId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+      allow create: if signedIn() && request.auth.uid in request.resource.data.participants;
+      allow update: if signedIn() && request.auth.uid in resource.data.participants;
+      allow delete: if signedIn() && (resource.data.initiator == request.auth.uid || isStaff());
+    }
+    
+    // Audio call sessions
+    match /audio_calls/{callId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+      allow create: if signedIn() && request.auth.uid in request.resource.data.participants;
+      allow update: if signedIn() && request.auth.uid in resource.data.participants;
+      allow delete: if signedIn() && (resource.data.initiator == request.auth.uid || isStaff());
+    }
+
+    /* ===== WORLD FEED & CONTENT SYSTEM ===== */
+    match /world_feed/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() &&
+        (resource.data.uid == request.auth.uid || isStaff());
+    }
+
+    // World feed comments
+    match /world_feed/{postId}/comments/{commentId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() &&
+        (resource.data.uid == request.auth.uid || isStaff());
+    }
+
+    // World feed reactions
+    match /world_feed/{postId}/reactions/{reactionId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn() && resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.uid == request.auth.uid || isStaff());
+    }
+    
+    // Content shares
+    match /content_shares/{shareId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.sharedBy == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.sharedBy == request.auth.uid || isStaff());
+    }
+    
+    // Content bookmarks
+    match /content_bookmarks/{bookmarkId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Content drafts
+    match /content_drafts/{draftId} {
+      allow read: if signedIn() && resource.data.authorId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.authorId == request.auth.uid;
+    }
+    
+    // Content collections
+    match /content_collections/{collectionId} {
+      allow read: if signedIn() && (resource.data.isPublic == true || resource.data.ownerId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.ownerId == request.auth.uid || isStaff());
+    }
+    
+    // Collection items
+    match /content_collections/{collectionId}/items/{itemId} {
+      allow read: if signedIn() && (
+        get(/databases/$(database)/documents/content_collections/$(collectionId)).data.isPublic == true ||
+        get(/databases/$(database)/documents/content_collections/$(collectionId)).data.ownerId == request.auth.uid
+      );
+      allow create: if signedIn() && 
+        get(/databases/$(database)/documents/content_collections/$(collectionId)).data.ownerId == request.auth.uid;
+      allow update, delete: if signedIn() && (
+        get(/databases/$(database)/documents/content_collections/$(collectionId)).data.ownerId == request.auth.uid ||
+        isStaff()
+      );
+    }
+
+    /* ===== EVENTS SYSTEM ===== */
+    match /events/{eventId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.hostUid == request.auth.uid;
+      allow update, delete: if signedIn() &&
+        (resource.data.hostUid == request.auth.uid || isStaff());
+    }
+
+    match /eventParticipants/{participantId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() &&
+        (resource.data.uid == request.auth.uid || isStaff());
+    }
+    
+    // Event categories
+    match /event_categories/{categoryId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // Event tickets
+    match /event_tickets/{ticketId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.eventHostId == request.auth.uid ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    // Event reviews
+    match /event_reviews/{reviewId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.reviewerId == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.reviewerId == request.auth.uid || isStaff());
+    }
+    
+    // Event check-ins
+    match /event_checkins/{checkinId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.eventHostId == request.auth.uid ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+
+    /* ===== STAGES EVENTS SYSTEM ===== */
+    // Stage events for live entertainment
+    match /stages_events/{eventId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.hostUid == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.hostUid == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.hostUid == request.auth.uid || isStaff()
+      );
+    }
+
+    // Stage event chat messages
+    match /stages_events/{eventId}/chat/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+    }
+
+    // Stage event reactions
+    match /stages_events/{eventId}/reactions/{reactionId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn() && resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.uid == request.auth.uid || isStaff());
+    }
+
+    // Hot seat queue for stage events
+    match /stages_events/{eventId}/hot_seat_queue/{queueId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+    }
+    
+    // Stage performers
+    match /stage_performers/{performerId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    // Stage bookings
+    match /stage_bookings/{bookingId} {
+      allow read: if signedIn() && (
+        resource.data.performerId == request.auth.uid ||
+        resource.data.bookerId == request.auth.uid ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.bookerId == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.performerId == request.auth.uid ||
+        resource.data.bookerId == request.auth.uid ||
+        isStaff()
+      );
+      allow delete: if signedIn() && (resource.data.bookerId == request.auth.uid || isStaff());
+    }
+
+    /* ===== LOUNGE SYSTEM ===== */
+    // Global lounge chat messages
+    match /lounge_messages/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+    }
+    
+    // Lounge tables for activity tracking
+    match /lounge_tables/{tableId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.hostUid == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.hostUid == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.hostUid == request.auth.uid || isStaff()
+      );
+    }
+    
+    // Lounge activities
+    match /lounge_activities/{activityId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.hostId == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.hostId == request.auth.uid || isStaff());
+    }
+    
+    // Lounge games
+    match /lounge_games/{gameId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.hostId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.hostId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.hostId == request.auth.uid || isStaff());
+    }
+    
+    // Lounge game participants
+    match /lounge_games/{gameId}/participants/{participantId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+
+    /* ===== TABLE CHAT SYSTEM ===== */
+    // Table-based chat rooms
+    match /table_chats/{tableId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if signedIn() && (
+        request.auth.uid == resource.data.get('hostUid', null) || isStaff()
+      );
+    }
+
+    // Table chat messages
+    match /table_chats/{tableId}/messages/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && reqMsgAuthor() == request.auth.uid;
+      allow update, delete: if signedIn() && (resMsgAuthor() == request.auth.uid || isStaff());
+    }
+    
+    // Table participants
+    match /table_chats/{tableId}/participants/{participantId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+
+    /* ===== WHISPER CHAT SYSTEM ===== */
+    // Private whisper conversations
+    match /whispers/{conversationId}/messages/{messageId} {
+      allow read: if signedIn() && (
+        resource.data.senderUid == request.auth.uid ||
+        resource.data.recipientUid == request.auth.uid
+      );
+      allow create: if signedIn() && request.resource.data.senderUid == request.auth.uid;
+      allow update: if signedIn() && resource.data.senderUid == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.senderUid == request.auth.uid || isStaff());
+    }
+    
+    // Whisper conversation metadata
+    match /whisper_conversations/{conversationId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+      allow create: if signedIn() && request.auth.uid in request.resource.data.participants;
+      allow update: if signedIn() && request.auth.uid in resource.data.participants;
+      allow delete: if signedIn() && (resource.data.initiator == request.auth.uid || isStaff());
+    }
+
+    /* ===== COMPREHENSIVE ARCADE SYSTEM ===== */
+    // Arcade points for users
+    match /arcade_points/{userId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && (
+        isOwner(userId) || 
+        isStaff()
+      );
+      allow delete: if isStaff();
+    }
+
+    // Daily missions available to all users
+    match /daily_missions/{missionDate} {
+      allow read: if signedIn();
+      allow create, update: if isStaff();
+      allow delete: if isStaff();
+    }
+
+    // User progress on daily missions
+    match /user_mission_progress/{progressId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Daily completion rewards
+    match /daily_completion_rewards/{rewardId} {
+      allow read: if signedIn();
+      allow create, update: if isStaff();
+      allow delete: if isStaff();
+    }
+
+    // Arcade game sessions tracking
+    match /arcade_games/{gameId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow delete: if isStaff();
+    }
+
+    // Arcade leaderboards
+    match /arcade_leaderboards/{leaderboardId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // Game high scores
+    match /game_high_scores/{scoreId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow delete: if isStaff();
+    }
+    
+    // Game tournaments
+    match /game_tournaments/{tournamentId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.organizer == request.auth.uid;
+      allow update: if signedIn() && (resource.data.organizer == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.organizer == request.auth.uid || isStaff());
+    }
+    
+    // Tournament participants
+    match /game_tournaments/{tournamentId}/participants/{participantId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    // Game challenges
+    match /game_challenges/{challengeId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.challengerId == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.challengerId == request.auth.uid ||
+        resource.data.challengedId == request.auth.uid ||
+        isStaff()
+      );
+      allow delete: if signedIn() && (resource.data.challengerId == request.auth.uid || isStaff());
+    }
+    
+    // Game achievements
+    match /game_achievements/{achievementId} {
+      allow read: if signedIn();
+      allow create, update: if isStaff();
+      allow delete: if isStaff();
+    }
+    
+    // User game achievements
+    match /user_game_achievements/{userAchievementId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && (request.resource.data.userId == request.auth.uid || isStaff());
+      allow update, delete: if isStaff();
+    }
+
+    /* ===== PASSPORT SYSTEM ===== */
+    // Passport stamps collected by users
+    match /passport_stamps/{stampId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Passport travels (user location visits)
+    match /passport_travels/{travelId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Passport encounters (user interactions)
+    match /passport_encounters/{encounterId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.metUserId == request.auth.uid || 
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // User passport statistics
+    match /user_passports/{userId} {
+      allow read: if signedIn() && (
+        userId == request.auth.uid || isStaff()
+      );
+      allow create, update: if signedIn() && (
+        userId == request.auth.uid || isStaff()
+      );
+      allow delete: if isStaff();
+    }
+    
+    // Passport destinations
+    match /passport_destinations/{destinationId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // Passport quests
+    match /passport_quests/{questId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // User passport quests
+    match /user_passport_quests/{userQuestId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    /* ===== DISTRICTS SYSTEM ===== */
+    // District user tracking and stats
+    match /districts_users/{userId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && (
+        userId == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && userId == request.auth.uid;
+    }
+
+    // District chat messages
+    match /districts_chats/{district}/messages/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+    }
+
+    // District confessions (anonymous)
+    match /districts_confessions/{district}/confessions/{confessionId} {
+      allow read: if signedIn();
+      allow create: if signedIn(); // Anonymous, but must be signed in
+      allow update, delete: if canModerateContent();
+    }
+
+    // District polls
+    match /districts_polls/{pollId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.createdBy == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.createdBy == request.auth.uid || isStaff()
+      );
+    }
+
+    // District poll votes
+    match /districts_polls/{pollId}/votes/{voteId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // District stories
+    match /districts_stories/{storyId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.authorId == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.authorId == request.auth.uid || isStaff()
+      );
+    }
+
+    // Dynamic district-specific collections
+    match /districts/{district}/messages/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+    }
+
+    // District reactions system
+    match /districts_reactions/{district}/reactions/{reactionId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn() && resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.uid == request.auth.uid || isStaff());
+    }
+    
+    // District leaderboards
+    match /districts_leaderboards/{district}/{leaderboardId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // District events
+    match /districts_events/{eventId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.organizer == request.auth.uid;
+      allow update: if signedIn() && (resource.data.organizer == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.organizer == request.auth.uid || isStaff());
+    }
+    
+    // District businesses
+    match /districts_businesses/{businessId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid && isBusinessAccount();
+      allow update: if signedIn() && (resource.data.ownerId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.ownerId == request.auth.uid || isStaff());
+    }
+
+    /* ===== SPOTLIGHT SYSTEM ===== */
+    // Current spotlight users
+    match /spotlight_current/{spotlightId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+    }
+    
+    // Spotlight queue
+    match /spotlight_queue/{queueId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    // Spotlight history
+    match /spotlight_history/{historyId} {
+      allow read: if signedIn();
+      allow create, update: if isStaff();
+      allow delete: if isStaff();
+    }
+    
+    // Spotlight votes
+    match /spotlight_votes/{voteId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.voterId == request.auth.uid;
+      allow update: if signedIn() && resource.data.voterId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.voterId == request.auth.uid;
+    }
+
+    /* ===== COMPREHENSIVE NOTIFICATION SYSTEM ===== */
+    // General notifications
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && (
+        resource.data.recipientUid == request.auth.uid || isStaff()
+      );
+      allow create: if signedIn() && (
+        request.resource.data.senderUid == request.auth.uid ||
+        isStaff()
+      );
+      allow update: if signedIn() && (
+        resource.data.recipientUid == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.recipientUid == request.auth.uid || isStaff()
+      );
+    }
+
+    // Global notifications (admin-only create)
+    match /globalNotifications/{notificationId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+
+    // User-specific notifications
+    match /userNotifications/{notificationId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow create: if signedIn() && (
+        request.resource.data.userId == request.auth.uid ||
+        isStaff()
+      );
+      allow update: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+    }
+    
+    // Push notification tokens
+    match /push_tokens/{tokenId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create, update: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    // Email notifications preferences
+    match /email_preferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // SMS notification preferences
+    match /sms_preferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Notification templates
+    match /notification_templates/{templateId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // Notification campaigns
+    match /notification_campaigns/{campaignId} {
+      allow read: if isStaff();
+      allow create: if isStaff() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isStaff() && (resource.data.createdBy == request.auth.uid || isSuperAdmin());
+      allow delete: if isStaff() && (resource.data.createdBy == request.auth.uid || isSuperAdmin());
+    }
+
+    /* ===== PAYMENT & SUBSCRIPTION SYSTEM ===== */
+    // User subscriptions
+    match /subscriptions/{subscriptionId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isStaff(); // Only system/admin can update subscription status
+      allow delete: if isStaff();
+    }
+    
+    // Payment methods
+    match /payment_methods/{methodId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    // Payment transactions
+    match /transactions/{transactionId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.recipientId == request.auth.uid ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isStaff(); // Only system can update transaction status
+      allow delete: if isStaff();
+    }
+    
+    // User credits/coins
+    match /user_credits/{userId} {
+      allow read: if signedIn() && (userId == request.auth.uid || isStaff());
+      allow create, update: if isStaff(); // Only system can manage credits
+      allow delete: if isStaff();
+    }
+    
+    // Credit transactions
+    match /credit_transactions/{transactionId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && (request.resource.data.userId == request.auth.uid || isStaff());
+      allow update, delete: if isStaff();
+    }
+    
+    // Premium features
+    match /premium_features/{featureId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // User premium access
+    match /user_premium_access/{accessId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create, update: if isStaff();
+      allow delete: if isStaff();
+    }
+    
+    // Invoices
+    match /invoices/{invoiceId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create, update: if isStaff();
+      allow delete: if isStaff();
+    }
+    
+    // Refund requests
+    match /refund_requests/{requestId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isStaff();
+      allow delete: if isStaff();
+    }
+
+    /* ===== MEDIA & FILE MANAGEMENT ===== */
+    // User uploaded media
+    match /user_media/{mediaId} {
+      allow read: if signedIn() && (
+        resource.data.uploadedBy == request.auth.uid ||
+        resource.data.isPublic == true ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.uploadedBy == request.auth.uid;
+      allow update: if signedIn() && (resource.data.uploadedBy == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.uploadedBy == request.auth.uid || isStaff());
+    }
+    
+    // Profile photos
+    match /profile_photos/{photoId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    // Photo albums
+    match /photo_albums/{albumId} {
+      allow read: if signedIn() && (
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.isPublic == true ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.ownerId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.ownerId == request.auth.uid || isStaff());
+    }
+    
+    // Album photos
+    match /photo_albums/{albumId}/photos/{photoId} {
+      allow read: if signedIn() && (
+        get(/databases/$(database)/documents/photo_albums/$(albumId)).data.ownerId == request.auth.uid ||
+        get(/databases/$(database)/documents/photo_albums/$(albumId)).data.isPublic == true ||
+        isStaff()
+      );
+      allow create: if signedIn() && 
+        get(/databases/$(database)/documents/photo_albums/$(albumId)).data.ownerId == request.auth.uid;
+      allow update, delete: if signedIn() && (
+        get(/databases/$(database)/documents/photo_albums/$(albumId)).data.ownerId == request.auth.uid ||
+        isStaff()
+      );
+    }
+    
+    // Video content
+    match /user_videos/{videoId} {
+      allow read: if signedIn() && (
+        resource.data.uploadedBy == request.auth.uid ||
+        resource.data.isPublic == true ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.uploadedBy == request.auth.uid;
+      allow update: if signedIn() && (resource.data.uploadedBy == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.uploadedBy == request.auth.uid || isStaff());
+    }
+    
+    // Audio content
+    match /user_audio/{audioId} {
+      allow read: if signedIn() && (
+        resource.data.uploadedBy == request.auth.uid ||
+        resource.data.isPublic == true ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.uploadedBy == request.auth.uid;
+      allow update: if signedIn() && (resource.data.uploadedBy == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.uploadedBy == request.auth.uid || isStaff());
+    }
+    
+    // File attachments
+    match /file_attachments/{attachmentId} {
+      allow read: if signedIn() && (
+        resource.data.uploadedBy == request.auth.uid ||
+        resource.data.isPublic == true ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.uploadedBy == request.auth.uid;
+      allow update: if signedIn() && (resource.data.uploadedBy == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.uploadedBy == request.auth.uid || isStaff());
+    }
+    
+    // Media moderation queue
+    match /media_moderation/{moderationId} {
+      allow read: if canModerateContent();
+      allow create: if signedIn();
+      allow update: if canModerateContent();
+      allow delete: if isStaff();
+    }
+
+    /* ===== SUPPORT & HELP SYSTEM ===== */
+    // Support tickets
+    match /supportTickets/{ticketId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isStaff() || (
+        signedIn() && resource.data.userId == request.auth.uid &&
+        (!('status' in request.resource.data) || request.resource.data.status == 'closed')
+      );
+      allow delete: if isStaff();
+    }
+
+    // Support ticket messages
+    match /supportTickets/{ticketId}/messages/{messageId} {
+      allow read: if signedIn() && (
+        get(/databases/$(database)/documents/supportTickets/$(ticketId)).data.userId == request.auth.uid ||
+        isStaff()
+      );
+      allow create: if signedIn() && (
+        request.resource.data.userId == request.auth.uid &&
+        get(/databases/$(database)/documents/supportTickets/$(ticketId)).data.userId == request.auth.uid
+      ) || isStaff();
+      allow update, delete: if isStaff();
+    }
+
+    // FAQ (read-only for users)
+    match /faq/{faqId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // FAQ categories
+    match /faq_categories/{categoryId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // Help articles
+    match /help_articles/{articleId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // User feedback
+    match /user_feedback/{feedbackId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isStaff();
+      allow delete: if isStaff();
+    }
+    
+    // Bug reports
+    match /bug_reports/{reportId} {
+      allow read: if signedIn() && (resource.data.reportedBy == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.reportedBy == request.auth.uid;
+      allow update: if isStaff();
+      allow delete: if isStaff();
+    }
+    
+    // Feature requests
+    match /feature_requests/{requestId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.requestedBy == request.auth.uid;
+      allow update: if signedIn() && (resource.data.requestedBy == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.requestedBy == request.auth.uid || isStaff());
+    }
+
+    // Legal documents (read-only for users)
+    match /legalDocuments/{documentId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // Terms of service
+    match /terms_of_service/{versionId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isSuperAdmin();
+    }
+    
+    // Privacy policy
+    match /privacy_policy/{versionId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isSuperAdmin();
+    }
+    
+    // Community guidelines
+    match /communityGuidelines/{guidelineId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+
+    /* ===== ANALYTICS & TRACKING ===== */
+    // User analytics
+    match /user_analytics/{analyticsId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && (request.resource.data.userId == request.auth.uid || isStaff());
+      allow update, delete: if isStaff();
+    }
+    
+    // App usage tracking
+    match /usage_tracking/{trackingId} {
+      allow read: if isStaff();
+      allow create: if signedIn();
+      allow update, delete: if isStaff();
+    }
+    
+    // Feature usage analytics
+    match /feature_analytics/{featureId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // Performance metrics
+    match /performance_metrics/{metricId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // Error logs
+    match /error_logs/{errorId} {
+      allow read: if isStaff();
+      allow create: if signedIn();
+      allow update, delete: if isStaff();
+    }
+    
+    // Click tracking
+    match /click_tracking/{clickId} {
+      allow read: if isStaff();
+      allow create: if signedIn();
+      allow update, delete: if isStaff();
+    }
+    
+    // Page views
+    match /page_views/{viewId} {
+      allow read: if isStaff();
+      allow create: if signedIn();
+      allow update, delete: if isStaff();
+    }
+    
+    // User engagement metrics
+    match /engagement_metrics/{metricId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isStaff();
+    }
+
+    /* ===== A/B TESTING & EXPERIMENTATION ===== */
+    // A/B tests configuration (admin-only)
+    match /abTests/{testId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isStaff();
+    }
+
+    // A/B test participants
+    match /abTestParticipants/{participantId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow create: if signedIn() && (
+        request.resource.data.userId == request.auth.uid ||
+        isStaff()
+      );
+      allow update: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow delete: if isStaff();
+    }
+    
+    // Experiment results
+    match /experiment_results/{resultId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // Feature flags
+    match /feature_flags/{flagId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+    
+    // User feature flags
+    match /user_feature_flags/{userFlagId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create, update: if isStaff();
+      allow delete: if isStaff();
+    }
+
+    /* ===== VOTING & POLLS SYSTEM ===== */
+    // Casualty votes
+    match /user_casualty_votes/{voteId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Community polls
+    match /community_polls/{pollId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if signedIn() && (resource.data.createdBy == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.createdBy == request.auth.uid || isStaff());
+    }
+    
+    // Poll votes
+    match /poll_votes/{voteId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Survey responses
+    match /survey_responses/{responseId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    /* ===== CONTEST & COMPETITION SYSTEM ===== */
+    // Meme contests
+    match /meme_contests/{contestId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.createdBy == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.createdBy == request.auth.uid || isStaff()
+      );
+    }
+
+    // Meme contest submissions
+    match /meme_contests/{contestId}/submissions/{submissionId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.userId == request.auth.uid || isStaff()
+      );
+    }
+
+    // Contest votes
+    match /contest_votes/{voteId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.voterId == request.auth.uid;
+      allow update: if signedIn() && resource.data.voterId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.voterId == request.auth.uid;
+    }
+    
+    // Photo contests
+    match /photo_contests/{contestId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if signedIn() && (resource.data.createdBy == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.createdBy == request.auth.uid || isStaff());
+    }
+    
+    // Video contests
+    match /video_contests/{contestId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if signedIn() && (resource.data.createdBy == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.createdBy == request.auth.uid || isStaff());
+    }
+    
+    // Contest submissions
+    match /contest_submissions/{submissionId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.submitterId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.submitterId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.submitterId == request.auth.uid || isStaff());
+    }
+    
+    // Contest winners
+    match /contest_winners/{winnerId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+
+    /* ===== MARKETPLACE & COMMERCE ===== */
+    // User stores
+    match /user_stores/{storeId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid && isBusinessAccount();
+      allow update: if signedIn() && (resource.data.ownerId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.ownerId == request.auth.uid || isStaff());
+    }
+    
+    // Products
+    match /products/{productId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.sellerId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.sellerId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.sellerId == request.auth.uid || isStaff());
+    }
+    
+    // Product reviews
+    match /product_reviews/{reviewId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.reviewerId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.reviewerId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.reviewerId == request.auth.uid || isStaff());
+    }
+    
+    // Shopping cart
+    match /shopping_carts/{cartId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Orders
+    match /orders/{orderId} {
+      allow read: if signedIn() && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.buyerId == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.sellerId == request.auth.uid ||
+        isStaff()
+      );
+      allow delete: if isStaff();
+    }
+    
+    // Wishlist
+    match /wishlists/{wishlistId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Service listings
+    match /service_listings/{serviceId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.providerId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.providerId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.providerId == request.auth.uid || isStaff());
+    }
+    
+    // Service bookings
+    match /service_bookings/{bookingId} {
+      allow read: if signedIn() && (
+        resource.data.clientId == request.auth.uid ||
+        resource.data.providerId == request.auth.uid ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.clientId == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.clientId == request.auth.uid ||
+        resource.data.providerId == request.auth.uid ||
+        isStaff()
+      );
+      allow delete: if signedIn() && (resource.data.clientId == request.auth.uid || isStaff());
+    }
+
+    /* ===== INFLUENCER & CREATOR SYSTEM ===== */
+    // Creator profiles
+    match /creator_profiles/{creatorId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid && isCreatorAccount();
+      allow update: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+    
+    // Content monetization
+    match /content_monetization/{monetizationId} {
+      allow read: if signedIn() && (resource.data.creatorId == request.auth.uid || isStaff());
+      allow create: if signedIn() && request.resource.data.creatorId == request.auth.uid && isCreatorAccount();
+      allow update: if signedIn() && (resource.data.creatorId == request.auth.uid || isStaff());
+      allow delete: if signedIn() && (resource.data.creatorId == request.auth.uid || isStaff());
+    }
+    
+    // Sponsorship deals
+    match /sponsorship_deals/{dealId} {
+      allow read: if signedIn() && (
+        resource.data.influencerId == request.auth.uid ||
+        resource.data.brandId == request.auth.uid ||
+        isStaff()
+      );
+      allow create: if signedIn() && (
+        request.resource.data.influencerId == request.auth.uid ||
+        request.resource.data.brandId == request.auth.uid
+      );
+      allow update: if signedIn() && (
+        resource.data.influencerId == request.auth.uid ||
+        resource.data.brandId == request.auth.uid ||
+        isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.influencerId == request.auth.uid ||
+        resource.data.brandId == request.auth.uid ||
+        isStaff()
+      );
+    }
+    
+    // Brand partnerships
+    match /brand_partnerships/{partnershipId} {
+      allow read: if signedIn() && (
+        resource.data.brandId == request.auth.uid ||
+        resource.data.partnerId == request.auth.uid ||
+        isStaff()
+      );
+      allow create: if signedIn() && (
+        request.resource.data.brandId == request.auth.uid ||
+        request.resource.data.partnerId == request.auth.uid
+      );
+      allow update: if signedIn() && (
+        resource.data.brandId == request.auth.uid ||
+        resource.data.partnerId == request.auth.uid ||
+        isStaff()
+      );
+      allow delete: if signedIn() && (
+        resource.data.brandId == request.auth.uid ||
+        resource.data.partnerId == request.auth.uid ||
+        isStaff()
+      );
+    }
+
+    /* ===== ADVANCED SECURITY & SAFETY ===== */
+    // Blocked users
+    match /blocked_users/{blockId} {
+      allow read: if signedIn() && (
+        resource.data.blockerId == request.auth.uid ||
+        resource.data.blockedId == request.auth.uid ||
+        isStaff()
+      );
+      allow create: if signedIn() && request.resource.data.blockerId == request.auth.uid;
+      allow update: if signedIn() && resource.data.blockerId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.blockerId == request.auth.uid || isStaff());
+    }
+    
+    // Safety reports
+    match /safety_reports/{reportId} {
+      allow read: if canModerateContent() || (resource.data.reporterId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.reporterId == request.auth.uid;
+      allow update: if canModerateContent();
+      allow delete: if isStaff();
+    }
+    
+    // Harassment reports
+    match /harassment_reports/{reportId} {
+      allow read: if canModerateContent() || (resource.data.reporterId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.reporterId == request.auth.uid;
+      allow update: if canModerateContent();
+      allow delete: if isStaff();
+    }
+    
+    // Security incidents
+    match /security_incidents/{incidentId} {
+      allow read: if isStaff();
+      allow create: if signedIn();
+      allow update, delete: if isStaff();
+    }
+    
+    // Account security
+    match /account_security/{securityId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create, update: if signedIn() && (request.resource.data.userId == request.auth.uid || isStaff());
+      allow delete: if isStaff();
+    }
+    
+    // Login attempts
+    match /login_attempts/{attemptId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if signedIn();
+      allow update, delete: if isStaff();
+    }
+    
+    // Suspicious activity
+    match /suspicious_activity/{activityId} {
+      allow read: if isStaff();
+      allow create: if signedIn();
+      allow update, delete: if isStaff();
+    }
+    
+    // Two-factor authentication
+    match /two_factor_auth/{authId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create, update: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+    }
+
+    /* ===== SYSTEM CONFIGURATION ===== */
+    // App configuration
+    match /app_config/{configId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isSuperAdmin();
+    }
+    
+    // System maintenance
+    match /system_maintenance/{maintenanceId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isSuperAdmin();
+    }
+    
+    // Server status
+    match /server_status/{statusId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isSuperAdmin();
+    }
+    
+    // API rate limits
+    match /api_rate_limits/{limitId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isSuperAdmin();
+    }
+    
+    // System logs
+    match /system_logs/{logId} {
+      allow read: if isStaff();
+      allow create: if isStaff();
+      allow update, delete: if isSuperAdmin();
+    }
+
+    /* ===== DEFAULT DENY ALL ===== */
+    // Fallback rule - deny access to any unmatched documents
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
