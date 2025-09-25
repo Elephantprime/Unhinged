@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Red Flag Roulette — The Lounge</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .game-container { max-width: 600px; margin: 40px auto; padding: 20px; }
+    .roulette-wheel {
+      width: 300px;
+      height: 300px;
+      margin: 20px auto;
+      border-radius: 50%;
+      background: conic-gradient(
+        #e11d2a 0deg 60deg,
+        #ff6b00 60deg 120deg,
+        #e11d2a 120deg 180deg,
+        #ff6b00 180deg 240deg,
+        #e11d2a 240deg 300deg,
+        #ff6b00 300deg 360deg
+      );
+      position: relative;
+      transition: transform 3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      border: 4px solid #fff;
+      box-shadow: 0 0 20px rgba(225, 29, 42, 0.5);
+    }
+    .wheel-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 40px;
+      height: 40px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      z-index: 2;
+    }
+    .wheel-pointer {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 30px solid #fff;
+      z-index: 3;
+    }
+    .result-card { 
+      background: linear-gradient(135deg, #15161b, #1a1b20);
+      border: 1px solid #e11d2a;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      margin: 20px 0;
+      min-height: 120px;
+    }
+    .red-flag { font-size: 18px; color: #fff; line-height: 1.4; }
+    .severity { 
+      display: inline-block; 
+      padding: 4px 8px; 
+      border-radius: 12px; 
+      font-size: 12px;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .mild { background: #ff6b00; color: #fff; }
+    .serious { background: #e11d2a; color: #fff; }
+    .run { background: #000; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <a href="../lounge.html" class="btn secondary" style="margin-bottom: 20px;">← Back to Lounge</a>
+    
+    <h1 style="text-align: center; color: #e11d2a;">🎰 Red Flag Roulette</h1>
+    
+    <div style="position: relative;">
+      <div class="wheel-pointer"></div>
+      <div id="rouletteWheel" class="roulette-wheel">
+        <div class="wheel-center">🚩</div>
+      </div>
+    </div>
+    
+    <div style="text-align: center; margin: 20px 0;">
+      <button id="spinBtn" class="btn primary" onclick="spin()">Spin the Wheel!</button>
+    </div>
+    
+    <div id="resultCard" class="result-card" style="display: none;">
+      <div id="redFlag" class="red-flag"></div>
+      <div id="severity" class="severity"></div>
+    </div>
+    
+    <p style="text-align: center; color: #cfd0de;">
+      <strong>How to play:</strong> Spin to reveal a random dating red flag. Discuss whether it's a deal-breaker or something you could work through!
+    </p>
+  </div>
+
+  <script>
+    const redFlags = [
+      { flag: "Always talks about their ex", severity: "mild" },
+      { flag: "Never wants to split the bill", severity: "mild" },
+      { flag: "Takes hours to reply to texts", severity: "mild" },
+      { flag: "Still lives with their parents at 30", severity: "serious" },
+      { flag: "Has no friends of their own", severity: "serious" },
+      { flag: "Checks your phone without permission", severity: "run" },
+      { flag: "Gets jealous when you talk to waiters", severity: "run" },
+      { flag: "Refuses to introduce you to family after 6 months", severity: "serious" },
+      { flag: "Always 'forgets' their wallet", severity: "serious" },
+      { flag: "Makes fun of your hobbies and interests", severity: "run" },
+      { flag: "Never asks about your day", severity: "mild" },
+      { flag: "Posts thirst traps while in a relationship", severity: "serious" },
+      { flag: "Calls you crazy when you express feelings", severity: "run" },
+      { flag: "Always needs to be the center of attention", severity: "serious" },
+      { flag: "Won't let you have alone time with friends", severity: "run" },
+      { flag: "Judges your food choices", severity: "mild" },
+      { flag: "Talks during movies in the theater", severity: "mild" },
+      { flag: "Never remembers important dates", severity: "serious" }
+    ];
+
+    let spinning = false;
+
+    function spin() {
+      if (spinning) return;
+      
+      spinning = true;
+      document.getElementById('spinBtn').disabled = true;
+      document.getElementById('resultCard').style.display = 'none';
+      
+      const wheel = document.getElementById('rouletteWheel');
+      const spins = Math.random() * 5 + 5; // 5-10 full rotations
+      const finalRotation = spins * 360;
+      
+      wheel.style.transform = `rotate(${finalRotation}deg)`;
+      
+      setTimeout(() => {
+        showResult();
+        spinning = false;
+        document.getElementById('spinBtn').disabled = false;
+      }, 3000);
+    }
+
+    function showResult() {
+      const randomFlag = redFlags[Math.floor(Math.random() * redFlags.length)];
+      
+      document.getElementById('redFlag').textContent = `🚩 ${randomFlag.flag}`;
+      
+      const severityEl = document.getElementById('severity');
+      severityEl.textContent = getSeverityText(randomFlag.severity);
+      severityEl.className = `severity ${randomFlag.severity}`;
+      
+      document.getElementById('resultCard').style.display = 'block';
+    }
+
+    function getSeverityText(severity) {
+      switch(severity) {
+        case 'mild': return '😅 MINOR RED FLAG';
+        case 'serious': return '⚠️ SERIOUS RED FLAG';
+        case 'run': return '🏃‍♀️ RUN FOR THE HILLS';
+        default: return 'RED FLAG';
+      }
+    }
+  </script>
+</body>
+</html>

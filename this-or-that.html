@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>This or That — The Lounge</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .game-container { max-width: 600px; margin: 40px auto; padding: 20px; }
+    .question-card { 
+      background: linear-gradient(135deg, #15161b, #1a1b20);
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .question { font-size: 24px; margin-bottom: 30px; color: #fff; }
+    .options { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+    .option-btn {
+      flex: 1;
+      max-width: 200px;
+      padding: 15px 20px;
+      background: linear-gradient(135deg, #ff6b00, #e11d2a);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .option-btn:hover { transform: translateY(-2px); }
+    .score { text-align: center; margin-top: 20px; font-size: 18px; color: #ff6b00; }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <a href="../lounge.html" class="btn secondary" style="margin-bottom: 20px;">← Back to Lounge</a>
+    
+    <h1 style="text-align: center; color: #ff6b00;">🤔 This or That</h1>
+    
+    <div class="question-card">
+      <div id="question" class="question">Loading question...</div>
+      <div class="options">
+        <button id="optionA" class="option-btn" onclick="selectOption('A')">Option A</button>
+        <button id="optionB" class="option-btn" onclick="selectOption('B')">Option B</button>
+      </div>
+    </div>
+    
+    <div class="score">Question <span id="current">1</span> of <span id="total">10</span></div>
+    
+    <div style="text-align: center;">
+      <button id="nextBtn" class="btn primary" onclick="nextQuestion()" style="display: none;">Next Question</button>
+      <button id="playAgain" class="btn primary" onclick="resetGame()" style="display: none;">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      { question: "Netflix and chill or adventure outdoors?", optionA: "Netflix & Chill", optionB: "Adventure Outdoors" },
+      { question: "Coffee date or dinner date?", optionA: "Coffee Date", optionB: "Dinner Date" },
+      { question: "Beach vacation or mountain retreat?", optionA: "Beach Vacation", optionB: "Mountain Retreat" },
+      { question: "Text all day or talk on the phone?", optionA: "Text All Day", optionB: "Talk on Phone" },
+      { question: "Stay in or go out?", optionA: "Stay In", optionB: "Go Out" },
+      { question: "Morning person or night owl?", optionA: "Morning Person", optionB: "Night Owl" },
+      { question: "Dogs or cats?", optionA: "Dogs", optionB: "Cats" },
+      { question: "Pizza or burgers?", optionA: "Pizza", optionB: "Burgers" },
+      { question: "Live music or movies?", optionA: "Live Music", optionB: "Movies" },
+      { question: "City life or country life?", optionA: "City Life", optionB: "Country Life" }
+    ];
+
+    let currentQuestion = 0;
+    let scores = { A: 0, B: 0 };
+
+    function loadQuestion() {
+      const q = questions[currentQuestion];
+      document.getElementById('question').textContent = q.question;
+      document.getElementById('optionA').textContent = q.optionA;
+      document.getElementById('optionB').textContent = q.optionB;
+      document.getElementById('current').textContent = currentQuestion + 1;
+      document.getElementById('total').textContent = questions.length;
+      
+      // Reset button states
+      document.getElementById('nextBtn').style.display = 'none';
+      document.getElementById('optionA').disabled = false;
+      document.getElementById('optionB').disabled = false;
+    }
+
+    function selectOption(option) {
+      scores[option]++;
+      
+      // Disable buttons and show next
+      document.getElementById('optionA').disabled = true;
+      document.getElementById('optionB').disabled = true;
+      document.getElementById('nextBtn').style.display = 'inline-block';
+    }
+
+    function nextQuestion() {
+      currentQuestion++;
+      
+      if (currentQuestion < questions.length) {
+        loadQuestion();
+      } else {
+        showResults();
+      }
+    }
+
+    function showResults() {
+      const questionCard = document.querySelector('.question-card');
+      const personality = scores.A > scores.B ? 'Cozy & Chill' : 'Adventurous & Social';
+      
+      questionCard.innerHTML = `
+        <div class="question">🎉 Game Complete!</div>
+        <p style="font-size: 18px; margin: 20px 0;">Your dating personality: <strong style="color: #ff6b00;">${personality}</strong></p>
+        <p style="color: #cfd0de;">You chose option A ${scores.A} times and option B ${scores.B} times.</p>
+      `;
+      
+      document.getElementById('playAgain').style.display = 'inline-block';
+      document.querySelector('.score').style.display = 'none';
+    }
+
+    function resetGame() {
+      currentQuestion = 0;
+      scores = { A: 0, B: 0 };
+      document.getElementById('playAgain').style.display = 'none';
+      document.querySelector('.score').style.display = 'block';
+      loadQuestion();
+    }
+
+    // Initialize
+    loadQuestion();
+  </script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Deal Breaker Dice — The Lounge</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .game-container { max-width: 600px; margin: 40px auto; padding: 20px; }
+    .dice-container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 30px 0;
+      flex-wrap: wrap;
+    }
+    .dice {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #ff6b00, #e11d2a);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    .dice.rolling {
+      animation: roll 0.5s ease-in-out;
+    }
+    .scenario-card { 
+      background: linear-gradient(135deg, #15161b, #1a1b20);
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      margin: 20px 0;
+      min-height: 150px;
+    }
+    .scenario-title { color: #ff6b00; font-size: 20px; margin-bottom: 15px; }
+    .scenario-text { font-size: 16px; color: #fff; line-height: 1.4; }
+    .vote-buttons { 
+      display: flex; 
+      gap: 15px; 
+      justify-content: center; 
+      margin-top: 20px; 
+      flex-wrap: wrap;
+    }
+    .vote-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .dealbreaker { background: #e11d2a; color: #fff; }
+    .workable { background: #00cc44; color: #fff; }
+    .vote-btn:hover { transform: scale(1.05); }
+    @keyframes roll {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.2); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <a href="../lounge.html" class="btn secondary" style="margin-bottom: 20px;">← Back to Lounge</a>
+    
+    <h1 style="text-align: center; color: #ff6b00;">🎲 Deal Breaker Dice</h1>
+    
+    <p style="text-align: center; color: #cfd0de; margin-bottom: 30px;">
+      <strong>How to play:</strong> Roll the dice to generate a random relationship scenario. Vote on whether it's a dealbreaker or workable!
+    </p>
+    
+    <div class="dice-container">
+      <div id="dice1" class="dice" onclick="rollDice()">🎲</div>
+      <div id="dice2" class="dice" onclick="rollDice()">🎲</div>
+    </div>
+    
+    <div style="text-align: center; margin: 20px 0;">
+      <button id="rollBtn" class="btn primary" onclick="rollDice()">Roll the Dice!</button>
+    </div>
+    
+    <div id="scenarioCard" class="scenario-card" style="display: none;">
+      <div id="scenarioTitle" class="scenario-title"></div>
+      <div id="scenarioText" class="scenario-text"></div>
+      <div class="vote-buttons">
+        <button class="vote-btn dealbreaker" onclick="vote('dealbreaker')">🚩 Deal Breaker</button>
+        <button class="vote-btn workable" onclick="vote('workable')">✅ Workable</button>
+      </div>
+      <div id="voteResult" style="margin-top: 15px; font-weight: bold;"></div>
+    </div>
+  </div>
+
+  <script>
+    const scenarios = [
+      {
+        title: "The Social Media Stalker",
+        text: "Your partner likes every single photo of their ex's new relationship on Instagram and follows all their friends."
+      },
+      {
+        title: "The Chronic Borrower", 
+        text: "They never have money for dates but somehow always have cash for their hobbies and always 'forget' to pay you back."
+      },
+      {
+        title: "The Parent Pleaser",
+        text: "They still ask their parents for permission before making any major decisions, including ones about your relationship."
+      },
+      {
+        title: "The Ghost Communicator",
+        text: "They disappear for days without explanation, then act like nothing happened when they resurface."
+      },
+      {
+        title: "The Comparison King/Queen",
+        text: "They constantly compare you to their ex, their friends' partners, or celebrities - both positively and negatively."
+      },
+      {
+        title: "The Selective Listener",
+        text: "They remember every detail about their interests but 'forget' important things you tell them about your life."
+      },
+      {
+        title: "The Double Standard Specialist",
+        text: "They get mad when you don't text back immediately but take hours to respond to your messages."
+      },
+      {
+        title: "The Boundary Buster",
+        text: "They read your texts, check your browser history, and show up at your workplace unannounced 'just because'."
+      },
+      {
+        title: "The Mood Ring",
+        text: "Their mood completely dictates the vibe of every date - if they're having a bad day, everyone suffers."
+      },
+      {
+        title: "The Credit Score Crusher",
+        text: "They have terrible financial habits and want you to cosign loans and credit cards for them after dating 3 months."
+      }
+    ];
+
+    let rolling = false;
+
+    function rollDice() {
+      if (rolling) return;
+      
+      rolling = true;
+      document.getElementById('rollBtn').disabled = true;
+      document.getElementById('scenarioCard').style.display = 'none';
+      
+      const dice1 = document.getElementById('dice1');
+      const dice2 = document.getElementById('dice2');
+      
+      dice1.classList.add('rolling');
+      dice2.classList.add('rolling');
+      
+      // Show random dice faces while rolling
+      const rollInterval = setInterval(() => {
+        dice1.textContent = Math.floor(Math.random() * 6) + 1;
+        dice2.textContent = Math.floor(Math.random() * 6) + 1;
+      }, 100);
+      
+      setTimeout(() => {
+        clearInterval(rollInterval);
+        
+        const final1 = Math.floor(Math.random() * 6) + 1;
+        const final2 = Math.floor(Math.random() * 6) + 1;
+        
+        dice1.textContent = final1;
+        dice2.textContent = final2;
+        dice1.classList.remove('rolling');
+        dice2.classList.remove('rolling');
+        
+        showScenario();
+        rolling = false;
+        document.getElementById('rollBtn').disabled = false;
+      }, 1000);
+    }
+
+    function showScenario() {
+      const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+      
+      document.getElementById('scenarioTitle').textContent = randomScenario.title;
+      document.getElementById('scenarioText').textContent = randomScenario.text;
+      document.getElementById('voteResult').textContent = '';
+      document.getElementById('scenarioCard').style.display = 'block';
+    }
+
+    function vote(choice) {
+      const resultEl = document.getElementById('voteResult');
+      
+      if (choice === 'dealbreaker') {
+        resultEl.innerHTML = '<span style="color: #e11d2a;">🚩 You voted: DEAL BREAKER!</span>';
+      } else {
+        resultEl.innerHTML = '<span style="color: #00cc44;">✅ You voted: WORKABLE!</span>';
+      }
+      
+      // Disable vote buttons after voting
+      document.querySelectorAll('.vote-btn').forEach(btn => {
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'default';
+        btn.onclick = null;
+      });
+      
+      setTimeout(() => {
+        // Re-enable vote buttons for next round
+        document.querySelectorAll('.vote-btn').forEach(btn => {
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+        });
+        document.querySelector('.dealbreaker').onclick = () => vote('dealbreaker');
+        document.querySelector('.workable').onclick = () => vote('workable');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

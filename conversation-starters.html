@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conversation Starters — The Lounge</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .game-container { max-width: 600px; margin: 40px auto; padding: 20px; }
+    .prompt-card { 
+      background: linear-gradient(135deg, #15161b, #1a1b20);
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      margin: 20px 0;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .category-tag {
+      display: inline-block;
+      background: #ff6b00;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+    .prompt-text { font-size: 18px; line-height: 1.4; color: #fff; text-align: center; }
+    .controls { text-align: center; margin-top: 30px; }
+    .filter-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 8px 16px;
+      border: 1px solid #2a2a2a;
+      background: transparent;
+      color: #cfd0de;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 12px;
+    }
+    .filter-btn.active {
+      background: #ff6b00;
+      border-color: #ff6b00;
+      color: #fff;
+    }
+    .filter-btn:hover {
+      border-color: #ff6b00;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <a href="../lounge.html" class="btn secondary" style="margin-bottom: 20px;">← Back to Lounge</a>
+    
+    <h1 style="text-align: center; color: #ff6b00;">💬 Conversation Starters</h1>
+    
+    <div class="filter-buttons">
+      <button class="filter-btn active" onclick="setFilter('all')">All Topics</button>
+      <button class="filter-btn" onclick="setFilter('deep')">Deep Questions</button>
+      <button class="filter-btn" onclick="setFilter('fun')">Fun & Light</button>
+      <button class="filter-btn" onclick="setFilter('dating')">Dating Focused</button>
+      <button class="filter-btn" onclick="setFilter('spicy')">Spicy 🌶️</button>
+    </div>
+    
+    <div class="prompt-card">
+      <div id="category" class="category-tag">Getting Started</div>
+      <div id="prompt" class="prompt-text">Click "New Question" to get your first conversation starter!</div>
+    </div>
+    
+    <div class="controls">
+      <button id="newBtn" class="btn primary" onclick="getNewPrompt()">New Question</button>
+      <button class="btn secondary" onclick="markFavorite()">⭐ Save Favorite</button>
+    </div>
+    
+    <div id="favoritesList" style="margin-top: 30px; display: none;">
+      <h3 style="color: #ff6b00; text-align: center;">⭐ Your Favorite Questions</h3>
+      <div id="favorites"></div>
+    </div>
+    
+    <p style="text-align: center; color: #cfd0de; margin-top: 20px;">
+      <strong>Tip:</strong> Use these questions to break the ice, dive deeper, or spice up your conversations!
+    </p>
+  </div>
+
+  <script>
+    const prompts = {
+      deep: [
+        "What's a belief you held as a child that you've completely changed your mind about?",
+        "If you could ask your future self one question, what would it be?",
+        "What's the most important lesson a past relationship taught you?",
+        "What scares you more: being vulnerable or being alone?",
+        "What's something you've never told anyone about yourself?",
+        "How has your definition of love changed over the years?",
+        "What's a childhood memory that still affects how you see the world?",
+        "If you knew you'd die in a year, how would you spend your time differently?"
+      ],
+      fun: [
+        "What's your weirdest talent or party trick?",
+        "If you were a wrestler, what would your entrance song be?",
+        "What's the strangest thing you believed as a child?",
+        "If you could only eat one cuisine for the rest of your life, what would it be?",
+        "What's your most embarrassing autocorrect fail?",
+        "If you had to live in a TV show for a week, which one would you choose?",
+        "What's the worst fashion trend you fully participated in?",
+        "If animals could talk, which species would be the rudest?"
+      ],
+      dating: [
+        "What's your biggest dating red flag that others might not notice?",
+        "How do you know when you're ready to be in a relationship?",
+        "What's the worst dating advice you've ever received?",
+        "What's your love language and how did you discover it?",
+        "What's something you need in a relationship that you've never asked for?",
+        "How do you handle conflict in relationships?",
+        "What's your biggest fear about falling in love?",
+        "What role should friends play in your romantic relationships?"
+      ],
+      spicy: [
+        "What's the most rebellious thing you've ever done?",
+        "What's a fantasy you've never shared with anyone?",
+        "What's your biggest turn-on that might surprise people?",
+        "What's the most adventurous place you've ever been intimate?",
+        "What's something you find attractive that others might think is weird?",
+        "What's your most scandalous secret?",
+        "What's the boldest thing you've ever done to get someone's attention?",
+        "What's a question you've always wanted to ask but never dared?"
+      ]
+    };
+
+    let currentFilter = 'all';
+    let favorites = JSON.parse(localStorage.getItem('conversationFavorites') || '[]');
+    let currentPrompt = '';
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      
+      // Update filter buttons
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      // Get new prompt with filter
+      getNewPrompt();
+    }
+
+    function getNewPrompt() {
+      let availablePrompts = [];
+      
+      if (currentFilter === 'all') {
+        availablePrompts = [...prompts.deep, ...prompts.fun, ...prompts.dating, ...prompts.spicy];
+      } else {
+        availablePrompts = prompts[currentFilter] || [];
+      }
+      
+      if (availablePrompts.length === 0) {
+        document.getElementById('prompt').textContent = "No prompts available for this category.";
+        return;
+      }
+      
+      currentPrompt = availablePrompts[Math.floor(Math.random() * availablePrompts.length)];
+      document.getElementById('prompt').textContent = currentPrompt;
+      
+      // Set category tag
+      const category = getCategoryForPrompt(currentPrompt);
+      const categoryEl = document.getElementById('category');
+      categoryEl.textContent = category;
+      
+      // Color code categories
+      switch(category.toLowerCase()) {
+        case 'deep questions': categoryEl.style.background = '#9c27b0'; break;
+        case 'fun & light': categoryEl.style.background = '#00bcd4'; break;
+        case 'dating focused': categoryEl.style.background = '#ff69b4'; break;
+        case 'spicy': categoryEl.style.background = '#e11d2a'; break;
+        default: categoryEl.style.background = '#ff6b00';
+      }
+    }
+
+    function getCategoryForPrompt(prompt) {
+      for (const [category, questions] of Object.entries(prompts)) {
+        if (questions.includes(prompt)) {
+          switch(category) {
+            case 'deep': return 'Deep Questions';
+            case 'fun': return 'Fun & Light';
+            case 'dating': return 'Dating Focused';
+            case 'spicy': return 'Spicy 🌶️';
+            default: return 'General';
+          }
+        }
+      }
+      return 'General';
+    }
+
+    function markFavorite() {
+      if (!currentPrompt) {
+        alert('Get a question first!');
+        return;
+      }
+      
+      if (!favorites.includes(currentPrompt)) {
+        favorites.push(currentPrompt);
+        localStorage.setItem('conversationFavorites', JSON.stringify(favorites));
+        alert('Question saved to favorites!');
+        updateFavoritesList();
+      } else {
+        alert('This question is already in your favorites!');
+      }
+    }
+
+    function updateFavoritesList() {
+      if (favorites.length > 0) {
+        const favoritesEl = document.getElementById('favorites');
+        favoritesEl.innerHTML = favorites.map((fav, index) => 
+          `<div style="background: #12131a; padding: 10px; margin: 5px 0; border-radius: 8px; font-size: 14px;">
+            ${fav} 
+            <button onclick="removeFavorite(${index})" style="float: right; background: none; border: none; color: #e11d2a; cursor: pointer;">✕</button>
+          </div>`
+        ).join('');
+        document.getElementById('favoritesList').style.display = 'block';
+      }
+    }
+
+    function removeFavorite(index) {
+      favorites.splice(index, 1);
+      localStorage.setItem('conversationFavorites', JSON.stringify(favorites));
+      updateFavoritesList();
+      
+      if (favorites.length === 0) {
+        document.getElementById('favoritesList').style.display = 'none';
+      }
+    }
+
+    // Initialize
+    updateFavoritesList();
+  </script>
+</body>
+</html>

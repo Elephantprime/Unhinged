@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Would You Still...? — The Lounge</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .game-container { max-width: 650px; margin: 40px auto; padding: 20px; }
+    .scenario-card { 
+      background: linear-gradient(135deg, #15161b, #1a1b20);
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      margin: 20px 0;
+      min-height: 200px;
+    }
+    .scenario-intro { 
+      color: #ff6b00; 
+      font-size: 18px; 
+      margin-bottom: 20px; 
+      font-weight: bold;
+    }
+    .scenario-text { 
+      font-size: 16px; 
+      color: #fff; 
+      line-height: 1.5; 
+      margin-bottom: 25px;
+    }
+    .answer-buttons { 
+      display: flex; 
+      gap: 15px; 
+      justify-content: center; 
+      margin-top: 20px; 
+      flex-wrap: wrap;
+    }
+    .answer-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 14px;
+      min-width: 120px;
+    }
+    .yes-btn { background: #00cc44; color: #fff; }
+    .no-btn { background: #e11d2a; color: #fff; }
+    .maybe-btn { background: #ff6b00; color: #fff; }
+    .answer-btn:hover { transform: scale(1.05); }
+    .stats-card {
+      background: #12131a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      padding: 8px;
+      background: #1a1b20;
+      border-radius: 6px;
+    }
+    .difficulty-indicator {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .easy { background: #00cc44; color: #fff; }
+    .medium { background: #ff6b00; color: #fff; }
+    .hard { background: #e11d2a; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <a href="../lounge.html" class="btn secondary" style="margin-bottom: 20px;">← Back to Lounge</a>
+    
+    <h1 style="text-align: center; color: #ff6b00;">💭 Would You Still...?</h1>
+    
+    <div class="scenario-card">
+      <div id="difficulty" class="difficulty-indicator easy">EASY</div>
+      <div class="scenario-intro">Would you still date someone if...</div>
+      <div id="scenario" class="scenario-text">Click "New Scenario" to get your first hypothetical situation!</div>
+      
+      <div id="answerButtons" class="answer-buttons" style="display: none;">
+        <button class="answer-btn yes-btn" onclick="answer('yes')">Yes, absolutely!</button>
+        <button class="answer-btn maybe-btn" onclick="answer('maybe')">Maybe, depends...</button>
+        <button class="answer-btn no-btn" onclick="answer('no')">No way!</button>
+      </div>
+      
+      <div id="answerResult" style="margin-top: 20px; font-weight: bold; display: none;"></div>
+    </div>
+    
+    <div style="text-align: center; margin: 20px 0;">
+      <button id="newBtn" class="btn primary" onclick="getNewScenario()">New Scenario</button>
+      <button id="nextBtn" class="btn secondary" onclick="getNewScenario()" style="display: none;">Next Scenario</button>
+    </div>
+    
+    <div id="statsCard" class="stats-card" style="display: none;">
+      <h3 style="color: #ff6b00; text-align: center; margin-bottom: 15px;">📊 Your Stats</h3>
+      <div class="stat-item">
+        <span>Yes answers:</span>
+        <span id="yesCount" style="color: #00cc44;">0</span>
+      </div>
+      <div class="stat-item">
+        <span>Maybe answers:</span>
+        <span id="maybeCount" style="color: #ff6b00;">0</span>
+      </div>
+      <div class="stat-item">
+        <span>No answers:</span>
+        <span id="noCount" style="color: #e11d2a;">0</span>
+      </div>
+      <div class="stat-item">
+        <span>Total scenarios:</span>
+        <span id="totalCount">0</span>
+      </div>
+    </div>
+    
+    <p style="text-align: center; color: #cfd0de; margin-top: 20px;">
+      <strong>How to play:</strong> Answer honestly to these hypothetical dating scenarios. Perfect for understanding your dealbreakers and discussing with others!
+    </p>
+  </div>
+
+  <script>
+    const scenarios = {
+      easy: [
+        "they were vegetarian and you loved meat?",
+        "they didn't drink alcohol and you enjoyed wine?",
+        "they were a morning person and you're a night owl?",
+        "they loved pineapple on pizza and you hate it?",
+        "they were obsessed with reality TV and you prefer documentaries?",
+        "they were super organized and you're more spontaneous?",
+        "they preferred texting over phone calls?",
+        "they were lactose intolerant and couldn't share your ice cream?"
+      ],
+      medium: [
+        "they had a very close relationship with their ex?",
+        "they wanted kids and you were unsure about having them?",
+        "they earned significantly more money than you?",
+        "they had a pet you were allergic to?",
+        "they wanted to live in a different country?",
+        "they were extremely religious and you weren't?",
+        "they had a job that required frequent travel?",
+        "they didn't get along with your best friends?",
+        "they had very different political views from you?",
+        "they wanted an open relationship and you preferred monogamy?"
+      ],
+      hard: [
+        "they had a serious chronic illness?",
+        "they were previously married and had children?",
+        "they were struggling with addiction but in recovery?",
+        "they had significant debt from student loans or medical bills?",
+        "they had a criminal record from their past?",
+        "they couldn't have biological children?",
+        "they were dealing with severe mental health challenges?",
+        "they had been unfaithful in all their previous relationships?",
+        "they had a disability that would require lifestyle changes?",
+        "they were estranged from their entire family?"
+      ]
+    };
+
+    let stats = JSON.parse(localStorage.getItem('wouldYouStillStats') || '{"yes": 0, "maybe": 0, "no": 0, "total": 0}');
+    let currentScenario = '';
+    let currentDifficulty = '';
+
+    function getNewScenario() {
+      // Randomly select difficulty level
+      const difficulties = ['easy', 'medium', 'hard'];
+      const weights = [0.4, 0.4, 0.2]; // 40% easy, 40% medium, 20% hard
+      
+      const random = Math.random();
+      let currentDifficulty = 'easy';
+      
+      if (random < weights[0]) {
+        currentDifficulty = 'easy';
+      } else if (random < weights[0] + weights[1]) {
+        currentDifficulty = 'medium';
+      } else {
+        currentDifficulty = 'hard';
+      }
+      
+      const scenarioList = scenarios[currentDifficulty];
+      currentScenario = scenarioList[Math.floor(Math.random() * scenarioList.length)];
+      
+      document.getElementById('scenario').textContent = currentScenario;
+      
+      // Update difficulty indicator
+      const difficultyEl = document.getElementById('difficulty');
+      difficultyEl.textContent = currentDifficulty.toUpperCase();
+      difficultyEl.className = `difficulty-indicator ${currentDifficulty}`;
+      
+      // Show answer buttons, hide result
+      document.getElementById('answerButtons').style.display = 'flex';
+      document.getElementById('answerResult').style.display = 'none';
+      
+      // Update button visibility
+      document.getElementById('newBtn').style.display = 'none';
+      document.getElementById('nextBtn').style.display = 'none';
+      
+      // Re-enable answer buttons
+      document.querySelectorAll('.answer-btn').forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      });
+    }
+
+    function answer(choice) {
+      stats[choice]++;
+      stats.total++;
+      localStorage.setItem('wouldYouStillStats', JSON.stringify(stats));
+      
+      // Show result
+      const resultEl = document.getElementById('answerResult');
+      let resultText = '';
+      let resultColor = '';
+      
+      switch(choice) {
+        case 'yes':
+          resultText = '✅ You answered: YES, absolutely!';
+          resultColor = '#00cc44';
+          break;
+        case 'maybe':
+          resultText = '🤔 You answered: Maybe, depends...';
+          resultColor = '#ff6b00';
+          break;
+        case 'no':
+          resultText = '❌ You answered: No way!';
+          resultColor = '#e11d2a';
+          break;
+      }
+      
+      resultEl.innerHTML = `<span style="color: ${resultColor};">${resultText}</span>`;
+      resultEl.style.display = 'block';
+      
+      // Disable answer buttons
+      document.querySelectorAll('.answer-btn').forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+      });
+      
+      // Show next button
+      document.getElementById('nextBtn').style.display = 'inline-block';
+      
+      // Update stats display
+      updateStatsDisplay();
+    }
+
+    function updateStatsDisplay() {
+      document.getElementById('yesCount').textContent = stats.yes;
+      document.getElementById('maybeCount').textContent = stats.maybe;
+      document.getElementById('noCount').textContent = stats.no;
+      document.getElementById('totalCount').textContent = stats.total;
+      
+      if (stats.total > 0) {
+        document.getElementById('statsCard').style.display = 'block';
+      }
+    }
+
+    // Initialize
+    updateStatsDisplay();
+  </script>
+</body>
+</html>

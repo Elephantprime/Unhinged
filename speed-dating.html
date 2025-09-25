@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Speed Dating — The Lounge</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .game-container { max-width: 600px; margin: 40px auto; padding: 20px; }
+    .prompt-card { 
+      background: linear-gradient(135deg, #15161b, #1a1b20);
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 20px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .prompt-text { font-size: 20px; line-height: 1.4; color: #fff; }
+    .timer { 
+      font-size: 48px; 
+      color: #ff6b00; 
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    .controls { text-align: center; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <a href="../lounge.html" class="btn secondary" style="margin-bottom: 20px;">← Back to Lounge</a>
+    
+    <h1 style="text-align: center; color: #ff6b00;">⚡ Speed Dating</h1>
+    
+    <div class="prompt-card">
+      <div id="prompt" class="prompt-text">Click "Start Round" to begin your first speed dating prompt!</div>
+    </div>
+    
+    <div id="timer" class="timer" style="text-align: center; display: none;">60</div>
+    
+    <div class="controls">
+      <button id="startBtn" class="btn primary" onclick="startRound()">Start Round</button>
+      <button id="nextBtn" class="btn primary" onclick="nextPrompt()" style="display: none;">Next Prompt</button>
+      <button id="stopBtn" class="btn secondary" onclick="stopRound()" style="display: none;">Stop</button>
+    </div>
+    
+    <p style="text-align: center; color: #cfd0de; margin-top: 20px;">
+      <strong>How to play:</strong> You have 60 seconds to discuss each prompt. Perfect for breaking the ice!
+    </p>
+  </div>
+
+  <script>
+    const prompts = [
+      "What's the most spontaneous thing you've ever done?",
+      "If you could have dinner with anyone, living or dead, who would it be?",
+      "What's your biggest fear and why?",
+      "Describe your perfect weekend.",
+      "What's something you've always wanted to learn?",
+      "What's your love language?",
+      "If you won the lottery tomorrow, what's the first thing you'd do?",
+      "What's the best advice you've ever received?",
+      "What makes you laugh until your stomach hurts?",
+      "If you could live anywhere in the world, where would it be?",
+      "What's your biggest turn-on in a relationship?",
+      "What's a deal-breaker for you in dating?",
+      "What's your guilty pleasure?",
+      "How do you handle conflict in relationships?",
+      "What's your favorite way to show affection?"
+    ];
+
+    let currentPrompt = 0;
+    let timerInterval = null;
+    let timeLeft = 60;
+
+    function startRound() {
+      showPrompt();
+      startTimer();
+      
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('nextBtn').style.display = 'inline-block';
+      document.getElementById('stopBtn').style.display = 'inline-block';
+    }
+
+    function showPrompt() {
+      const prompt = prompts[Math.floor(Math.random() * prompts.length)];
+      document.getElementById('prompt').textContent = prompt;
+    }
+
+    function startTimer() {
+      timeLeft = 60;
+      document.getElementById('timer').style.display = 'block';
+      updateTimer();
+      
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimer();
+        
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          timeUp();
+        }
+      }, 1000);
+    }
+
+    function updateTimer() {
+      const timerEl = document.getElementById('timer');
+      timerEl.textContent = timeLeft;
+      
+      // Change color as time runs out
+      if (timeLeft <= 10) {
+        timerEl.style.color = '#e11d2a';
+        if (timeLeft <= 5) {
+          timerEl.style.animation = 'pulse 0.5s infinite';
+        }
+      } else {
+        timerEl.style.color = '#ff6b00';
+        timerEl.style.animation = 'none';
+      }
+    }
+
+    function timeUp() {
+      document.getElementById('prompt').innerHTML = `
+        <div style="color: #e11d2a;">⏰ Time's up!</div>
+        <div style="font-size: 16px; margin-top: 10px; color: #cfd0de;">Click "Next Prompt" for another round</div>
+      `;
+    }
+
+    function nextPrompt() {
+      clearInterval(timerInterval);
+      showPrompt();
+      startTimer();
+    }
+
+    function stopRound() {
+      clearInterval(timerInterval);
+      
+      document.getElementById('prompt').textContent = "Round stopped. Click 'Start Round' to begin again!";
+      document.getElementById('timer').style.display = 'none';
+      document.getElementById('startBtn').style.display = 'inline-block';
+      document.getElementById('nextBtn').style.display = 'none';
+      document.getElementById('stopBtn').style.display = 'none';
+    }
+
+    // Add pulse animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>
