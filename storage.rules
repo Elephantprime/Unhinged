@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    /* ===== SECURITY HELPER FUNCTIONS ===== */
+    
+    // Basic authentication check
+    function signedIn() { 
+      return request.auth != null; 
+    }
+    
+    // Owner validation
+    function isOwner(userId) { 
+      return signedIn() && request.auth.uid == userId; 
+    }
+    
+    // SECURITY FIX: Admin check using proper admin role only
+    function isAdmin() { 
+      return signedIn() &&
+        exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true;
+    }
+    
+    // Moderator check with admin fallback
+    function isModerator() { 
+      return isAdmin() || (
+        signedIn() &&
+        exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('isModerator', false) == true
+      ); 
+    }
+    
+    /* ===== FILE VALIDATION FUNCTIONS ===== */
+    
+    // SECURITY FIX: File size validation with configurable limits
+    function validFileSize(maxSizeMB) {
+      return request.resource.size <= maxSizeMB * 1024 * 1024;
+    }
+    
+    // SECURITY FIX: File type validation for images
+    function validImageType() {
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp)');
+    }
+    
+    // SECURITY FIX: File type validation for images only (no null/octet-stream)
+    function validMediaType() {
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp|heic|heif)');
+    }
+    
+    // SECURITY FIX: Strict validation for profile uploads - images only
+    function validProfileMediaType() {
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp|heic|heif)');
+    }
+    
+    // SECURITY FIX: Removed unsafe allowMobileUploads function
+    // All uploads must now pass proper content type validation
