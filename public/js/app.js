@@ -135,6 +135,42 @@ function close(el) {
   }
 }
 
+/* ===== Live Stream Chat Control Functions ===== */
+
+// Live stream chat control functions - MUST be defined before setupEventListeners()
+function minimizeLiveStreamChat() {
+  const chatContainer = document.getElementById('liveStreamChatContainer');
+  if (chatContainer) {
+    chatContainer.style.height = '40px';
+    chatContainer.style.overflow = 'hidden';
+    console.log('📉 Live stream chat minimized');
+  }
+}
+
+function maximizeLiveStreamChat() {
+  const chatContainer = document.getElementById('liveStreamChatContainer');
+  if (chatContainer) {
+    chatContainer.style.height = 'auto';
+    chatContainer.style.overflow = 'visible';
+    console.log('📈 Live stream chat maximized');
+  }
+}
+
+function closeLiveStreamChat() {
+  const chatContainer = document.getElementById('liveStreamChatContainer');
+  if (chatContainer) {
+    chatContainer.style.display = 'none';
+    console.log('❌ Live stream chat closed');
+  }
+}
+
+// Expose chat control functions to global scope for inline onclick handlers
+Object.assign(window, {
+  minimizeLiveStreamChat,
+  maximizeLiveStreamChat,
+  closeLiveStreamChat
+});
+
 /* ===== App Initialization ===== */
 
 // Initialize app when DOM is ready
@@ -218,40 +254,6 @@ function setupEventListeners() {
   
   console.log('✅ Event listeners set up safely');
 }
-
-// Live stream chat control functions
-function minimizeLiveStreamChat() {
-  const chatContainer = document.getElementById('liveStreamChatContainer');
-  if (chatContainer) {
-    chatContainer.style.height = '40px';
-    chatContainer.style.overflow = 'hidden';
-    console.log('📉 Live stream chat minimized');
-  }
-}
-
-function maximizeLiveStreamChat() {
-  const chatContainer = document.getElementById('liveStreamChatContainer');
-  if (chatContainer) {
-    chatContainer.style.height = 'auto';
-    chatContainer.style.overflow = 'visible';
-    console.log('📈 Live stream chat maximized');
-  }
-}
-
-function closeLiveStreamChat() {
-  const chatContainer = document.getElementById('liveStreamChatContainer');
-  if (chatContainer) {
-    chatContainer.style.display = 'none';
-    console.log('❌ Live stream chat closed');
-  }
-}
-
-// Expose chat control functions to global scope for inline onclick handlers
-Object.assign(window, {
-  minimizeLiveStreamChat,
-  maximizeLiveStreamChat,
-  closeLiveStreamChat
-});
 
 async function initializeAuth() {
   console.log('🔐 Initializing authentication...');
