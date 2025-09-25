@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unhinged Stages - Live Events</title>
+  <link rel="stylesheet" href="stages.css">
+  <script type="module" src="../js/firebase.js"></script>
+  <script type="module" src="stages.js"></script>
+</head>
+<body>
+  <div id="stages-container">
+    
+    <!-- Navigation Bar -->
+    <nav class="world-nav" style="background: linear-gradient(120deg, #1a1b22 90%, #0a0a13 100%); border-bottom: 2px solid #E11D2A; padding: 10px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div class="nav-left" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <a href="world.html" class="btn" data-testid="button-back-world" style="background: linear-gradient(99deg, #2a2c39 40%, #E11D2A 100%); color: #fff;">← World Hub</a>
+        <a href="../app.html" class="btn" data-testid="button-community" style="background: linear-gradient(99deg, #E11D2A 40%, #ff6b00 100%); color: #fff;">🔥 Community</a>
+      </div>
+      <div class="nav-right" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <!-- Points Display -->
+        <div id="userPointsDisplay" class="btn points-display" data-testid="button-points" title="View leaderboard" style="background: linear-gradient(135deg, #ffd700, #ffb347); border-color: #ffd700; color: #000; font-weight: bold; cursor: pointer; display: none;" onclick="window.location.href='../leaderboard.html'">
+          🏆 <span id="userPointsCount">0</span> pts
+        </div>
+        <a href="../chaos.html" class="btn" data-testid="button-chaos" style="background: linear-gradient(99deg, #16161c 30%, #ff6b00 100%); color: #fff;">💔 Chaos Wall</a>
+        <a href="../profile.html" class="btn" data-testid="button-profile" style="background: linear-gradient(99deg, #16161c 50%, #e11d2a 100%); color: #fff;">👤 Profile</a>
+      </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="stages-header">
+      <div class="header-content">
+        <div class="title-section">
+          <h1>🎤 Unhinged Stages</h1>
+          <p>Live audio rooms, video pods, and spotlight events</p>
+        </div>
+        <div class="header-actions">
+          <button id="create-event-btn" class="create-btn" data-testid="button-create-event">+ Create Event</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Event Filters -->
+    <div class="event-filters" data-testid="container-event-filters">
+      <div class="filter-tabs">
+        <button class="filter-btn active" data-filter="all" data-testid="button-filter-all">All Events</button>
+        <button class="filter-btn" data-filter="audio" data-testid="button-filter-audio">🎙️ Audio Rooms</button>
+        <button class="filter-btn" data-filter="video" data-testid="button-filter-video">📹 Video Pods</button>
+        <button class="filter-btn" data-filter="hotseat" data-testid="button-filter-hotseat">🔥 Hot Seat</button>
+        <button class="filter-btn" data-filter="live" data-testid="button-filter-live">🔴 Live Now</button>
+      </div>
+      <div class="stats-display" data-testid="container-stats">
+        <span class="stat-item" data-testid="text-live-count">🔴 <span id="live-count">0</span> Live</span>
+        <span class="stat-item" data-testid="text-total-participants">👥 <span id="total-participants">0</span> Active</span>
+      </div>
+    </div>
+
+    <!-- Event Board -->
+    <div class="event-board" data-testid="container-event-board">
+      <div class="events-grid" id="events-grid" data-testid="grid-events">
+        <!-- Events will be dynamically loaded here -->
+      </div>
+      
+      <!-- Loading State -->
+      <div class="loading-state" id="loading-state" data-testid="container-loading">
+        <div class="loading-spinner"></div>
+        <p>Loading events...</p>
+      </div>
+      
+      <!-- Empty State -->
+      <div class="empty-state" id="empty-state" style="display: none;" data-testid="container-empty">
+        <div class="empty-icon">🎭</div>
+        <h3>No events found</h3>
+        <p>Be the first to create an event and get the party started!</p>
+        <button class="create-btn" id="create-first-event-btn" data-testid="button-create-first-event">Create First Event</button>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions" data-testid="container-quick-actions">
+      <button class="quick-action-btn audio-btn" id="quick-audio-btn" data-testid="button-quick-audio">
+        <span class="icon">🎙️</span>
+        <span class="text">Start Audio Room</span>
+      </button>
+      <button class="quick-action-btn video-btn" id="quick-video-btn" data-testid="button-quick-video">
+        <span class="icon">📹</span>
+        <span class="text">Create Video Pod</span>
+      </button>
+      <button class="quick-action-btn hotseat-btn" id="quick-hotseat-btn" data-testid="button-quick-hotseat">
+        <span class="icon">🔥</span>
+        <span class="text">Host Hot Seat</span>
+      </button>
+    </div>
+
+    <!-- Event Creation Modal -->
+    <div class="modal-backdrop" id="event-modal-backdrop" style="display: none;" data-testid="modal-create-event">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Create New Event</h2>
+          <button class="close-btn" id="close-event-modal-btn" data-testid="button-close-modal">×</button>
+        </div>
+        <form id="create-event-form" data-testid="form-create-event">
+          <div class="form-group">
+            <label for="event-title" data-testid="label-event-title">Event Title</label>
+            <input type="text" id="event-title" name="title" required maxlength="100" data-testid="input-event-title" placeholder="Enter event title...">
+          </div>
+          
+          <div class="form-group">
+            <label for="event-type" data-testid="label-event-type">Event Type</label>
+            <select id="event-type" name="eventType" required data-testid="select-event-type">
+              <option value="">Choose type...</option>
+              <option value="audio">🎙️ Audio Room</option>
+              <option value="video">📹 Video Pod</option>
+              <option value="hotseat">🔥 Hot Seat</option>
+              <option value="panel">👥 Panel Discussion</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="event-description" data-testid="label-event-description">Description</label>
+            <textarea id="event-description" name="description" maxlength="300" data-testid="textarea-event-description" placeholder="What's this event about?"></textarea>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="start-time" data-testid="label-start-time">Start Time</label>
+              <input type="datetime-local" id="start-time" name="startTime" required data-testid="input-start-time">
+            </div>
+            <div class="form-group">
+              <label for="max-participants" data-testid="label-max-participants">Max Participants</label>
+              <input type="number" id="max-participants" name="maxParticipants" min="2" max="50" value="10" data-testid="input-max-participants">
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" id="cancel-event-btn" data-testid="button-cancel-event">Cancel</button>
+            <button type="submit" class="submit-btn" data-testid="button-submit-event">Create Event</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Event Detail Modal -->
+    <div class="modal-backdrop" id="event-detail-backdrop" style="display: none;" data-testid="modal-event-detail">
+      <div class="modal-content event-detail-modal">
+        <div class="modal-header">
+          <h2 id="detail-event-title" data-testid="text-detail-title">Event Title</h2>
+          <button class="close-btn" id="close-detail-modal-btn" data-testid="button-close-detail">×</button>
+        </div>
+        <div class="event-detail-content">
+          <div class="event-meta" data-testid="container-event-meta">
+            <div class="meta-item">
+              <span class="meta-label">Type:</span>
+              <span id="detail-event-type" data-testid="text-detail-type">Audio Room</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Host:</span>
+              <span id="detail-event-host" data-testid="text-detail-host">Unknown</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Time:</span>
+              <span id="detail-event-time" data-testid="text-detail-time">Now</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Participants:</span>
+              <span id="detail-participant-count" data-testid="text-detail-participants">0/10</span>
+            </div>
+          </div>
+          
+          <div class="event-description" data-testid="container-event-description">
+            <h4>About this event</h4>
+            <p id="detail-event-description" data-testid="text-detail-description">No description provided.</p>
+          </div>
+          
+          <div class="participant-list" data-testid="container-participant-list">
+            <h4>Participants <span id="participant-count-badge" data-testid="text-participant-badge">0</span></h4>
+            <div class="participants-grid" id="participants-grid" data-testid="grid-participants">
+              <!-- Participants will be loaded here -->
+            </div>
+          </div>
+        </div>
+        
+        <div class="event-actions">
+          <button id="join-event-btn" class="join-btn" data-testid="button-join-event">Join Event</button>
+          <button id="leave-event-btn" class="leave-btn" style="display: none;" data-testid="button-leave-event">Leave Event</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hot Seat Q&A - Unhinged Stages</title>
+  <link rel="stylesheet" href="stages.css">
+  <link rel="stylesheet" href="hot-seat.css">
+  <script type="module" src="../js/firebase.js"></script>
+  <script type="module" src="hot-seat.js"></script>
+</head>
+<body>
+  <div id="hot-seat-container">
+    
+    <!-- Hot Seat Header -->
+    <header class="hot-seat-header">
+      <div class="seat-info">
+        <div class="seat-icon">🔥</div>
+        <div class="seat-details">
+          <h1 id="seat-title" data-testid="text-seat-title">Loading...</h1>
+          <p id="seat-description" data-testid="text-seat-description">Connecting to hot seat...</p>
+        </div>
+      </div>
+      
+      <div class="seat-controls">
+        <div class="participant-count" data-testid="container-participant-count">
+          <span class="count-icon">👥</span>
+          <span id="total-participants" data-testid="text-participant-count">0</span>
+        </div>
+        <button id="seat-settings-btn" class="header-control-btn" data-testid="button-seat-settings" title="Hot Seat Settings">⚙️</button>
+        <button id="leave-seat-btn" class="leave-btn" data-testid="button-leave-seat">Leave Session</button>
+      </div>
+    </header>
+
+    <!-- Main Hot Seat Interface -->
+    <div class="hot-seat-main">
+      
+      <!-- Spotlight Area -->
+      <div class="spotlight-area" data-testid="container-spotlight">
+        <div class="spotlight-header">
+          <h2>🔥 In the Hot Seat</h2>
+          <div class="spotlight-timer" id="spotlight-timer" data-testid="text-timer">
+            <span class="timer-icon">⏱️</span>
+            <span id="timer-display" data-testid="text-timer-display">0:00</span>
+          </div>
+        </div>
+        
+        <div class="hot-seat-spotlight" id="hot-seat-spotlight" data-testid="container-current-seat">
+          <div class="empty-seat" id="empty-seat" data-testid="container-empty-seat">
+            <div class="seat-visual">🪑</div>
+            <h3>The Hot Seat is Empty</h3>
+            <p>Waiting for someone brave enough to take the heat!</p>
+            <button id="take-seat-btn" class="take-seat-btn" data-testid="button-take-seat">Take the Hot Seat</button>
+          </div>
+          
+          <div class="occupied-seat" id="occupied-seat" style="display: none;" data-testid="container-occupied-seat">
+            <div class="seat-participant">
+              <div class="participant-avatar" id="seat-avatar" data-testid="avatar-current">?</div>
+              <div class="participant-info">
+                <h3 id="seat-participant-name" data-testid="text-current-name">Unknown</h3>
+                <p class="seat-status" id="seat-status" data-testid="text-seat-status">Answering questions...</p>
+              </div>
+            </div>
+            
+            <div class="seat-controls" id="seat-participant-controls" data-testid="container-seat-controls">
+              <button id="end-turn-btn" class="control-btn" data-testid="button-end-turn" style="display: none;">End My Turn</button>
+              <button id="remove-participant-btn" class="control-btn host-only" data-testid="button-remove-participant" style="display: none;">Remove from Seat</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Queue Display -->
+        <div class="seat-queue" id="seat-queue" data-testid="container-seat-queue">
+          <h3>🙋 Next in Line</h3>
+          <div class="queue-list" id="queue-list" data-testid="list-seat-queue">
+            <div class="empty-queue" id="empty-queue" data-testid="container-empty-queue">
+              <p>No one in queue - be the first to volunteer!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q&A and Audience Area -->
+      <div class="audience-area">
+        
+        <!-- Question Submission Panel -->
+        <div class="question-panel" data-testid="container-question-panel">
+          <div class="panel-header">
+            <h3>❓ Ask a Question</h3>
+            <div class="question-stats">
+              <span id="questions-count" data-testid="text-questions-count">0</span> questions submitted
+            </div>
+          </div>
+          
+          <div class="question-form" data-testid="container-question-form">
+            <textarea 
+              id="question-input" 
+              placeholder="What would you like to ask the person in the hot seat?"
+              maxlength="200"
+              data-testid="textarea-question-input"
+            ></textarea>
+            <div class="question-actions">
+              <button id="submit-question-btn" class="submit-btn" data-testid="button-submit-question">Submit Question</button>
+              <div class="question-options">
+                <label>
+                  <input type="checkbox" id="anonymous-question" data-testid="checkbox-anonymous">
+                  Ask anonymously
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Questions Feed -->
+        <div class="questions-feed" data-testid="container-questions-feed">
+          <div class="feed-header">
+            <h3>🔥 Live Questions</h3>
+            <div class="feed-controls" id="host-feed-controls" style="display: none;" data-testid="container-host-feed-controls">
+              <button id="clear-questions-btn" class="control-btn" data-testid="button-clear-questions">Clear All</button>
+              <button id="filter-questions-btn" class="control-btn" data-testid="button-filter-questions">Filter</button>
+            </div>
+          </div>
+          
+          <div class="questions-list" id="questions-list" data-testid="list-questions">
+            <!-- Questions will be dynamically loaded here -->
+          </div>
+          
+          <div class="empty-questions" id="empty-questions" data-testid="container-empty-questions">
+            <div class="empty-icon">❓</div>
+            <p>No questions yet. Be the first to ask something!</p>
+          </div>
+        </div>
+
+        <!-- Audience Interaction Panel -->
+        <div class="interaction-panel" data-testid="container-interaction-panel">
+          <div class="audience-controls">
+            <button id="join-queue-btn" class="interaction-btn" data-testid="button-join-queue">
+              <span class="btn-icon">🙋</span>
+              <span class="btn-text">Join Queue</span>
+            </button>
+            
+            <button id="applause-btn" class="interaction-btn" data-testid="button-applause">
+              <span class="btn-icon">👏</span>
+              <span class="btn-text">Applause</span>
+            </button>
+            
+            <button id="reaction-btn" class="interaction-btn" data-testid="button-reactions">
+              <span class="btn-icon">😂</span>
+              <span class="btn-text">React</span>
+            </button>
+          </div>
+          
+          <!-- Quick Reactions -->
+          <div class="quick-reactions" id="quick-reactions" style="display: none;" data-testid="container-reactions">
+            <button class="reaction-btn" data-reaction="😂" data-testid="button-reaction-laugh">😂</button>
+            <button class="reaction-btn" data-reaction="👏" data-testid="button-reaction-clap">👏</button>
+            <button class="reaction-btn" data-reaction="🔥" data-testid="button-reaction-fire">🔥</button>
+            <button class="reaction-btn" data-reaction="👍" data-testid="button-reaction-thumbs">👍</button>
+            <button class="reaction-btn" data-reaction="😱" data-testid="button-reaction-shock">😱</button>
+            <button class="reaction-btn" data-reaction="💯" data-testid="button-reaction-hundred">💯</button>
+          </div>
+        </div>
+
+        <!-- Audience Members List -->
+        <div class="audience-section" data-testid="container-audience">
+          <div class="audience-header">
+            <h3>👥 Audience (<span id="audience-count" data-testid="text-audience-count">0</span>)</h3>
+            <button id="toggle-audience-btn" class="toggle-btn" data-testid="button-toggle-audience">Hide</button>
+          </div>
+          
+          <div class="audience-list" id="audience-list" data-testid="list-audience">
+            <!-- Audience members will be listed here -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Reaction Animations Container -->
+    <div class="reaction-animations" id="reaction-animations" data-testid="container-reaction-animations">
+      <!-- Flying reaction animations will appear here -->
+    </div>
+
+    <!-- Host Controls Modal -->
+    <div class="modal-backdrop" id="host-modal-backdrop" style="display: none;" data-testid="modal-host-controls">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Host Controls</h2>
+          <button class="close-btn" id="close-host-modal-btn" data-testid="button-close-host-modal">×</button>
+        </div>
+        
+        <div class="host-controls-content">
+          <div class="control-section">
+            <h4>Queue Management</h4>
+            <div class="queue-controls" data-testid="container-queue-controls">
+              <button id="next-participant-btn" class="control-btn" data-testid="button-next-participant">Next Participant</button>
+              <button id="clear-queue-btn" class="control-btn" data-testid="button-clear-queue">Clear Queue</button>
+              <button id="shuffle-queue-btn" class="control-btn" data-testid="button-shuffle-queue">Shuffle Queue</button>
+            </div>
+          </div>
+          
+          <div class="control-section">
+            <h4>Session Settings</h4>
+            <div class="session-controls">
+              <label>
+                <span>Time limit per person (minutes):</span>
+                <input type="number" id="time-limit" min="1" max="30" value="5" data-testid="input-time-limit">
+              </label>
+              <label>
+                <input type="checkbox" id="auto-advance" data-testid="checkbox-auto-advance">
+                Auto-advance when time expires
+              </label>
+              <label>
+                <input type="checkbox" id="allow-anonymous" checked data-testid="checkbox-allow-anonymous">
+                Allow anonymous questions
+              </label>
+            </div>
+          </div>
+          
+          <div class="control-section">
+            <h4>Moderation</h4>
+            <div class="moderation-controls">
+              <button id="pause-session-btn" class="control-btn" data-testid="button-pause-session">Pause Session</button>
+              <button id="end-session-btn" class="control-btn danger" data-testid="button-end-session">End Session</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hot Seat Settings Modal -->
+    <div class="modal-backdrop" id="settings-modal-backdrop" style="display: none;" data-testid="modal-seat-settings">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Hot Seat Settings</h2>
+          <button class="close-btn" id="close-settings-modal-btn" data-testid="button-close-settings">×</button>
+        </div>
+        
+        <div class="settings-content">
+          <div class="setting-group">
+            <label for="notification-sounds">Notification Sounds</label>
+            <select id="notification-sounds" data-testid="select-notification-sounds">
+              <option value="on">On</option>
+              <option value="off">Off</option>
+              <option value="important">Important Only</option>
+            </select>
+          </div>
+          
+          <div class="setting-group">
+            <label>
+              <input type="checkbox" id="auto-scroll-questions" checked data-testid="checkbox-auto-scroll">
+              Auto-scroll to new questions
+            </label>
+          </div>
+          
+          <div class="setting-group">
+            <label>
+              <input type="checkbox" id="show-queue-position" checked data-testid="checkbox-show-position">
+              Show my position in queue
+            </label>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="cancel-btn" id="cancel-settings-btn" data-testid="button-cancel-settings">Cancel</button>
+          <button class="submit-btn" id="save-settings-btn" data-testid="button-save-settings">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

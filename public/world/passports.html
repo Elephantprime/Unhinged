@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unhinged Passports - Your Journey</title>
+  <link rel="stylesheet" href="passports.css">
+  <script type="module" src="../js/firebase.js"></script>
+  <script type="module" src="../js/profile-gate.js"></script>
+  <script type="module" src="passports.js"></script>
+</head>
+<body>
+  <div id="passports-container">
+    
+    <!-- Navigation Bar -->
+    <nav class="world-nav" style="background: linear-gradient(120deg, #1a1b22 90%, #0a0a13 100%); border-bottom: 2px solid #E11D2A; padding: 10px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div class="nav-left" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <a href="world.html" class="btn" data-testid="button-back-world" style="background: linear-gradient(99deg, #2a2c39 40%, #E11D2A 100%); color: #fff;">← World Hub</a>
+        <a href="../app.html" class="btn" data-testid="button-community" style="background: linear-gradient(99deg, #E11D2A 40%, #ff6b00 100%); color: #fff;">🔥 Community</a>
+      </div>
+      <div class="nav-right" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <!-- Points Display -->
+        <div id="userPointsDisplay" class="btn points-display" data-testid="button-points" title="View leaderboard" style="background: linear-gradient(135deg, #ffd700, #ffb347); border-color: #ffd700; color: #000; font-weight: bold; cursor: pointer; display: none;" onclick="window.location.href='../leaderboard.html'">
+          🏆 <span id="userPointsCount">0</span> pts
+        </div>
+        <a href="../chaos.html" class="btn" data-testid="button-chaos" style="background: linear-gradient(99deg, #16161c 30%, #ff6b00 100%); color: #fff;">💔 Chaos Wall</a>
+        <a href="../profile.html" class="btn" data-testid="button-profile" style="background: linear-gradient(99deg, #16161c 50%, #e11d2a 100%); color: #fff;">👤 Profile</a>
+      </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="passports-header">
+      <h1>📔 Unhinged Passports</h1>
+      <p>Track your journey through the chaos</p>
+    </header>
+
+    <!-- Passport Book -->
+    <div class="passport-book">
+      
+      <!-- Cover Page -->
+      <div class="passport-cover">
+        <div class="passport-title">
+          <h2>🌍 UNHINGED WORLD</h2>
+          <p>OFFICIAL PASSPORT</p>
+        </div>
+        <div class="passport-photo">
+          <img id="user-passport-photo" src="https://i.pravatar.cc/120" alt="Your Photo">
+        </div>
+        <div class="passport-info">
+          <h3 id="passport-name">Loading...</h3>
+          <p id="passport-joined">Member since: Loading...</p>
+          <p id="passport-status">Explorer Status</p>
+        </div>
+      </div>
+
+      <!-- Stamps Collection -->
+      <div class="stamps-section">
+        <h3>🎯 Interaction Stamps</h3>
+        <p>Collect stamps by meeting people and exploring spaces</p>
+        
+        <div class="stamp-categories">
+          
+          <!-- Social Stamps -->
+          <div class="stamp-category">
+            <h4>👥 Social Stamps</h4>
+            <div class="stamps-grid" id="social-stamps">
+              <!-- Stamps will be populated here -->
+            </div>
+          </div>
+
+          <!-- Location Stamps -->
+          <div class="stamp-category">
+            <h4>📍 Location Stamps</h4>
+            <div class="stamps-grid" id="location-stamps">
+              <!-- Stamps will be populated here -->
+            </div>
+          </div>
+
+          <!-- Achievement Stamps -->
+          <div class="stamp-category">
+            <h4>🏆 Achievement Stamps</h4>
+            <div class="stamps-grid" id="achievement-stamps">
+              <!-- Stamps will be populated here -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Travel Log -->
+      <div class="travel-log">
+        <h3>📝 Travel Log</h3>
+        <div class="log-entries" id="travel-entries">
+          <!-- Travel entries will be populated here -->
+        </div>
+      </div>
+
+      <!-- Collection Stats -->
+      <div class="collection-stats">
+        <h3>📊 Collection Overview</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="total-stamps">0</div>
+            <div class="stat-label">Total Stamps</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="places-visited">0</div>
+            <div class="stat-label">Places Visited</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="people-met">0</div>
+            <div class="stat-label">People Met</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="completion-rate">0%</div>
+            <div class="stat-label">Collection Rate</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+
+  </div>
+</body>
+</html>

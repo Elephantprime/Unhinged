@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unhinged Arcade - Games & Play</title>
+  <link rel="stylesheet" href="arcade.css">
+  <script type="module" src="../js/firebase.js"></script>
+  <script type="module" src="arcade.js"></script>
+</head>
+<body>
+  <div id="arcade-container">
+    
+    <!-- Navigation Bar -->
+    <nav class="world-nav" style="background: linear-gradient(120deg, #1a1b22 90%, #0a0a13 100%); border-bottom: 2px solid #E11D2A; padding: 10px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div class="nav-left" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <a href="world.html" class="btn" data-testid="button-back-world" style="background: linear-gradient(99deg, #2a2c39 40%, #E11D2A 100%); color: #fff;">← World Hub</a>
+        <a href="../app.html" class="btn" data-testid="button-community" style="background: linear-gradient(99deg, #E11D2A 40%, #ff6b00 100%); color: #fff;">🔥 Community</a>
+      </div>
+      <div class="nav-right" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <!-- Points Display -->
+        <div id="userPointsDisplay" class="btn points-display" data-testid="button-points" title="View leaderboard" style="background: linear-gradient(135deg, #ffd700, #ffb347); border-color: #ffd700; color: #000; font-weight: bold; cursor: pointer; display: none;" onclick="window.location.href='../leaderboard.html'">
+          🏆 <span id="userPointsCount">0</span> pts
+        </div>
+        <a href="../chaos.html" class="btn" data-testid="button-chaos" style="background: linear-gradient(99deg, #16161c 30%, #ff6b00 100%); color: #fff;">💔 Chaos Wall</a>
+        <a href="../profile.html" class="btn" data-testid="button-profile" style="background: linear-gradient(99deg, #16161c 50%, #e11d2a 100%); color: #fff;">👤 Profile</a>
+      </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="arcade-header">
+      <h1>🎮 Unhinged Arcade</h1>
+      <p>Games, challenges, and chaotic fun</p>
+    </header>
+
+    <!-- Game Categories -->
+    <div class="game-categories">
+      
+      <!-- Truth or Dare -->
+      <div class="game-card truth-dare-card">
+        <div class="game-icon">🎯</div>
+        <h3>Truth or Dare</h3>
+        <p>Classic game with unhinged twists</p>
+        <div class="game-stats">
+          <span>🔥 Hot Questions</span>
+          <span>😈 Wild Dares</span>
+        </div>
+        <button class="play-btn" data-game="truth-dare">Play Now</button>
+      </div>
+
+      <!-- Would You Rather -->
+      <div class="game-card wyr-card">
+        <div class="game-icon">🤔</div>
+        <h3>Would You Rather</h3>
+        <p>Impossible choices, hilarious results</p>
+        <div class="game-stats">
+          <span>💭 Mind Benders</span>
+          <span>😂 Comedy Gold</span>
+        </div>
+        <button class="play-btn" data-game="would-rather">Play Now</button>
+      </div>
+
+      <!-- Trivia -->
+      <div class="game-card trivia-card">
+        <div class="game-icon">🧠</div>
+        <h3>Trivia & Polls</h3>
+        <p>Test your knowledge and opinions</p>
+        <div class="game-stats">
+          <span>📚 Random Facts</span>
+          <span>🗳️ Hot Takes</span>
+        </div>
+        <button class="play-btn" data-game="trivia">Play Now</button>
+      </div>
+
+      <!-- Meme Contest -->
+      <div class="game-card meme-card">
+        <div class="game-icon">😂</div>
+        <h3>Meme Contest</h3>
+        <p>Create and vote on the funniest memes</p>
+        <div class="game-stats">
+          <span>🏆 Weekly Winners</span>
+          <span>😭 Cringe Gallery</span>
+        </div>
+        <button class="play-btn" data-game="memes">Play Now</button>
+      </div>
+
+      <!-- Mini Casino -->
+      <div class="game-card casino-card">
+        <div class="game-icon">🎰</div>
+        <h3>Mini Casino</h3>
+        <p>Bet status points, win bragging rights</p>
+        <div class="game-stats">
+          <span>🃏 Blackjack</span>
+          <span>🎲 Dice Games</span>
+        </div>
+        <button class="play-btn" data-game="casino">Play Now</button>
+      </div>
+
+      <!-- Hot Seat -->
+      <div class="game-card hotseat-card">
+        <div class="game-icon">🔥</div>
+        <h3>Hot Seat</h3>
+        <p>One player, rapid-fire questions</p>
+        <div class="game-stats">
+          <span>⚡ Quick Fire</span>
+          <span>🎭 Drama Central</span>
+        </div>
+        <button class="play-btn" data-game="hotseat">Play Now</button>
+      </div>
+
+    </div>
+
+    <!-- Current Game Area -->
+    <div id="game-area" class="game-area" style="display: none;">
+      <div class="game-header">
+        <h2 id="current-game-title">Game Title</h2>
+        <button id="exit-game" class="exit-btn">✕ Exit Game</button>
+      </div>
+      <div id="game-content" class="game-content">
+        <!-- Game content will be loaded here -->
+      </div>
+    </div>
+
+    <!-- Leaderboards -->
+    <div class="leaderboards">
+      <h2>🏆 Arcade Champions</h2>
+      <div class="leaderboard-tabs">
+        <button class="lb-tab active" data-category="overall">Overall</button>
+        <button class="lb-tab" data-category="truth-dare">Truth or Dare</button>
+        <button class="lb-tab" data-category="casino">Casino</button>
+        <button class="lb-tab" data-category="memes">Meme Contest</button>
+      </div>
+      <div class="leaderboard-list" id="leaderboard-list">
+        <!-- Leaderboard content -->
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

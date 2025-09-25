@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unhinged Spotlight - Global Highlight</title>
+  <link rel="stylesheet" href="spotlight.css">
+  <script type="module" src="../js/firebase.js"></script>
+  <script type="module" src="spotlight.js"></script>
+</head>
+<body>
+  <div id="spotlight-container">
+    
+    <!-- Navigation Bar -->
+    <nav class="world-nav" style="background: linear-gradient(120deg, #1a1b22 90%, #0a0a13 100%); border-bottom: 2px solid #E11D2A; padding: 10px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div class="nav-left" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <a href="world.html" class="btn" data-testid="button-back-world" style="background: linear-gradient(99deg, #2a2c39 40%, #E11D2A 100%); color: #fff;">← World Hub</a>
+        <a href="../app.html" class="btn" data-testid="button-community" style="background: linear-gradient(99deg, #E11D2A 40%, #ff6b00 100%); color: #fff;">🔥 Community</a>
+      </div>
+      <div class="nav-right" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <!-- Points Display -->
+        <div id="userPointsDisplay" class="btn points-display" data-testid="button-points" title="View leaderboard" style="background: linear-gradient(135deg, #ffd700, #ffb347); border-color: #ffd700; color: #000; font-weight: bold; cursor: pointer; display: none;" onclick="window.location.href='../leaderboard.html'">
+          🏆 <span id="userPointsCount">0</span> pts
+        </div>
+        <a href="../chaos.html" class="btn" data-testid="button-chaos" style="background: linear-gradient(99deg, #16161c 30%, #ff6b00 100%); color: #fff;">💔 Chaos Wall</a>
+        <a href="../profile.html" class="btn" data-testid="button-profile" style="background: linear-gradient(99deg, #16161c 50%, #e11d2a 100%); color: #fff;">👤 Profile</a>
+      </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="spotlight-header">
+      <h1>⭐ Unhinged Spotlight</h1>
+      <p>Global highlight rotating every 5 minutes</p>
+    </header>
+
+    <!-- Current Spotlight -->
+    <div class="current-spotlight">
+      <div class="spotlight-stage">
+        <div class="spotlight-beam"></div>
+        <div class="featured-user" id="featured-user">
+          <img id="spotlight-avatar" src="https://i.pravatar.cc/150" alt="Featured User">
+          <h2 id="spotlight-name">Loading...</h2>
+          <p id="spotlight-bio">Spotlight bio will appear here...</p>
+          <div class="spotlight-stats">
+            <span id="spotlight-age">Age: --</span>
+            <span id="spotlight-location">Location: --</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="spotlight-timer">
+        <div class="timer-display">
+          <span id="time-remaining">4:32</span>
+          <p>until next spotlight</p>
+        </div>
+        <div class="progress-ring">
+          <svg>
+            <circle cx="50" cy="50" r="40" id="progress-circle"></circle>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spotlight Queue -->
+    <div class="spotlight-queue">
+      <h3>🎭 Coming Up Next</h3>
+      <div class="queue-list" id="queue-list">
+        <!-- Queue items will be populated here -->
+      </div>
+    </div>
+
+    <!-- Spotlight Actions -->
+    <div class="spotlight-actions">
+      <button class="action-btn like-btn" id="like-spotlight">❤️ Like</button>
+      <button class="action-btn wave-btn" id="wave-spotlight">👋 Wave</button>
+      <button class="action-btn message-btn" id="message-spotlight">💬 Message</button>
+      <button class="action-btn boost-btn" id="boost-spotlight">🚀 Boost</button>
+    </div>
+
+    <!-- Spotlight Tokens -->
+    <div class="spotlight-tokens">
+      <h3>🎟️ Spotlight Tokens</h3>
+      <div class="token-info">
+        <div class="token-balance">
+          <span class="token-count" id="user-tokens">5</span>
+          <span class="token-label">Tokens Available</span>
+        </div>
+        <div class="token-actions">
+          <button class="token-btn" id="buy-spotlight">🎯 Buy Spotlight (10 tokens)</button>
+          <button class="token-btn" id="schedule-spotlight">📅 Schedule Mine</button>
+        </div>
+      </div>
+      <div class="token-description">
+        <p>💡 Use tokens to feature yourself in the global spotlight!</p>
+        <p>🎁 Earn tokens by being active in World activities</p>
+      </div>
+    </div>
+
+    <!-- Spotlight History -->
+    <div class="spotlight-history">
+      <h3>📜 Recent Spotlights</h3>
+      <div class="history-grid" id="history-grid">
+        <!-- History items will be populated here -->
+      </div>
+    </div>
+
+    <!-- Coming Soon Features -->
+    <div class="coming-soon">
+      <h2>🌟 Enhanced Spotlight Features</h2>
+      <div class="features-preview">
+        <div class="feature">🎥 Video Spotlights</div>
+        <div class="feature">🎤 Audio Messages</div>
+        <div class="feature">🎨 Custom Spotlight Themes</div>
+        <div class="feature">🏆 Spotlight Competitions</div>
+        <div class="feature">💎 Premium Spotlight Effects</div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unhinged Districts</title>
+  <link rel="stylesheet" href="districts.css?v=20250917k">
+  <script type="module" src="../js/firebase.js"></script>
+  <script type="module" src="../js/profile-gate.js"></script>
+  <script type="module" src="../js/admin-ui.js"></script>
+  <script type="module" src="../js/toast-notifications.js"></script>
+  <script type="module" src="districts.js?v=20250917V"></script>
+</head>
+<body>
+  <div class="header-nav">
+    <button class="nav-button back-button" onclick="goToWorldHub()">← World Hub</button>
+    <button class="nav-button community-button" onclick="window.location.href='../app.html'">🔥 Community</button>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <div id="districts-container">
+    <header>
+      <h1>🏙️ Unhinged Districts</h1>
+      <p>Themed neighborhoods for every mood and vibe</p>
+    </header>
+
+    <div class="search-container">
+      <input type="text" class="search-input" placeholder="🔍 Find your vibe..." id="district-search">
+    </div>
+
+    <!-- District Cards -->
+    <div class="districts-grid">
+      
+      <!-- Dating District -->
+      <div class="district-card" data-district="dating" data-testid="card-dating">
+        <div class="district-icon">💕</div>
+        <h3>Dating District</h3>
+        <p class="district-description">Romance, flirting, and relationship chaos</p>
+        <div class="district-stats">
+          <span class="activity-status">💬 Hot conversations</span>
+        </div>
+        <div class="district-features">
+          <span class="feature-tag">Speed Dating</span>
+          <span class="feature-tag">Pickup Line Battle</span>
+          <span class="feature-tag">Date Reviews</span>
+        </div>
+      </div>
+
+      <!-- Meme Market -->
+      <div class="district-card" data-district="memes" data-testid="card-memes">
+        <div class="district-icon">😂</div>
+        <h3>Meme Market</h3>
+        <p class="district-description">The funniest corner of the internet</p>
+        <div class="district-stats">
+          <span class="activity-status">📸 Fresh memes dropping</span>
+        </div>
+        <div class="district-features">
+          <span class="feature-tag">Meme Trading</span>
+          <span class="feature-tag">Roast Battles</span>
+          <span class="feature-tag">Comedy Shows</span>
+        </div>
+      </div>
+
+      <!-- Confession Corner -->
+      <div class="district-card" data-district="confessions" data-testid="card-confessions">
+        <div class="district-icon">🤫</div>
+        <h3>Confession Corner</h3>
+        <p class="district-description">Your secrets are safe here (maybe)</p>
+        <div class="district-stats">
+          <span class="activity-status">🔥 Spicy confessions</span>
+        </div>
+        <div class="district-features">
+          <span class="feature-tag">Anonymous Chat</span>
+          <span class="feature-tag">Support Groups</span>
+          <span class="feature-tag">Secret Sharing</span>
+        </div>
+      </div>
+
+      <!-- Debate Dome -->
+      <div class="district-card" data-district="debates" data-testid="card-debates">
+        <div class="district-icon">⚔️</div>
+        <h3>Debate Dome</h3>
+        <p class="district-description">Where opinions go to fight</p>
+        <div class="district-stats">
+          <span class="activity-status">🔥 Heated debates</span>
+        </div>
+        <div class="district-features">
+          <span class="feature-tag">Topic Debates</span>
+          <span class="feature-tag">Fact Checking</span>
+          <span class="feature-tag">Opinion Polls</span>
+        </div>
+      </div>
+
+      <!-- Toxic Exes Anonymous -->
+      <div class="district-card" data-district="toxic" data-testid="card-toxic">
+        <div class="district-icon">💀</div>
+        <h3>Toxic Exes Anonymous</h3>
+        <p class="district-description">Support group turned roast session</p>
+        <div class="district-stats">
+          <span class="activity-status">💀 No chill zone</span>
+        </div>
+        <div class="district-features">
+          <span class="feature-tag">Story Sharing</span>
+          <span class="feature-tag">Red Flag Bingo</span>
+          <span class="feature-tag">Recovery Tips</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Full Page District View (appears when district is selected) -->
+    <div id="district-fullpage" class="district-fullpage" style="display: none;">
+      <div class="district-header">
+        <button class="back-button" onclick="goBackToDistricts()" data-testid="button-back">← Back to Districts</button>
+        <h2 id="district-title">District Chat</h2>
+        <div class="district-actions">
+          <button class="refresh-button" onclick="refreshDistrict()" data-testid="button-refresh">🔄 Refresh</button>
+        </div>
+      </div>
+      
+      <div class="district-body">
+        <div class="district-features-bar" id="features-bar">
+          <!-- Feature buttons will be added dynamically per district -->
+        </div>
+        
+        <div class="district-content-wrapper">
+          <div class="district-chat-container">
+            <div class="chat-box" id="active-chat"></div>
+          </div>
+          
+          <div class="district-input-area">
+            <input type="text" id="chat-input" placeholder="Type your message..." data-testid="input-message">
+            <button id="send-button" onclick="sendChatMessage()" data-testid="button-send">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

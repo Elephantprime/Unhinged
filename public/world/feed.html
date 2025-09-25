@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unhinged Feed - Town Square</title>
+  <link rel="stylesheet" href="feed.css">
+  <script type="module" src="../js/firebase.js"></script>
+  <script type="module" src="../js/profile-gate.js"></script>
+  <script src="../js/photo-utils.js?v=20250916"></script>
+  <script src="../js/avatar-utils.js?v=20250916"></script>
+  <script type="module" src="feed.js"></script>
+  <script type="module" src="../js/admin-ui.js"></script>
+</head>
+<body>
+  <div id="feed-container">
+    
+    <!-- Header -->
+    <header class="feed-header">
+      <h1>🏛️ Town Square</h1>
+      <p class="feed-subtitle">The heartbeat of Unhinged World</p>
+      <div class="user-info">
+        <img id="user-avatar" src="https://i.pravatar.cc/50" alt="Your Avatar">
+        <span id="user-name">Loading...</span>
+        <div class="quick-actions">
+          <button class="action-btn" id="create-post-btn" data-testid="button-create-post">✍️ Create Post</button>
+          <button class="action-btn" id="world-pulse-btn" data-testid="button-world-pulse">💗 World Pulse</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Live Updates Bar -->
+    <div class="live-updates-bar">
+      <div class="update-item">
+        <span class="update-icon">🎤</span>
+        <span id="live-events-count">Loading events...</span>
+      </div>
+      <div class="update-item">
+        <span class="update-icon">👥</span>
+        <span id="active-users-count">Loading users...</span>
+      </div>
+      <div class="update-item">
+        <span class="update-icon">💬</span>
+        <span id="recent-activity-count">Loading activity...</span>
+      </div>
+    </div>
+
+    <!-- Post Creation Modal (Hidden by default) -->
+    <div id="post-modal" class="modal-overlay" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Create a Post</h3>
+          <button class="close-btn" data-testid="button-close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <textarea id="post-content" placeholder="What's happening in your Unhinged world?" data-testid="input-post-content"></textarea>
+          <div class="post-options">
+            <select id="post-visibility" data-testid="select-visibility">
+              <option value="public">🌍 Public to World</option>
+              <option value="district">🏙️ District Only</option>
+              <option value="friends">👥 Friends Only</option>
+            </select>
+            <div class="post-tags">
+              <span class="tag-option" data-tag="confession">🙊 Confession</span>
+              <span class="tag-option" data-tag="tea">🍵 Tea</span>
+              <span class="tag-option" data-tag="flex">💪 Flex</span>
+              <span class="tag-option" data-tag="chaos">💔 Chaos</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="cancel-post-btn" data-testid="button-cancel-post">Cancel</button>
+          <button class="btn-primary" id="submit-post-btn" data-testid="button-submit-post">Post to Feed</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feed Content -->
+    <div class="feed-content">
+      
+      <!-- Loading State -->
+      <div id="loading-state" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading the latest from Unhinged World...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="empty-state" style="display: none;">
+        <div class="empty-icon">📭</div>
+        <h3>The Town Square is quiet...</h3>
+        <p>Be the first to share what's happening in your world!</p>
+        <button class="btn-primary" onclick="document.getElementById('create-post-btn').click()">Create First Post</button>
+      </div>
+
+      <!-- Feed Items Container -->
+      <div id="feed-items" class="feed-items">
+        <!-- Feed items will be dynamically inserted here -->
+      </div>
+
+      <!-- Load More Button -->
+      <div class="load-more-container" style="display: none;">
+        <button id="load-more-btn" class="load-more-btn" data-testid="button-load-more">Load More Stories</button>
+      </div>
+
+    </div>
+
+    <!-- Navigation Back to World Hub -->
+    <div class="nav-back">
+      <a href="world.html" class="back-btn world-hub-btn" data-testid="button-world-hub">
+        🌍 Back to World Hub
+      </a>
+      <div class="quick-nav">
+        <a href="lounge.html" class="quick-nav-btn" data-testid="button-lounge">🏠 Lounge</a>
+        <a href="stages.html" class="quick-nav-btn" data-testid="button-stages">🎤 Stages</a>
+        <a href="arcade.html" class="quick-nav-btn" data-testid="button-arcade">🎮 Arcade</a>
+        <a href="districts.html" class="quick-nav-btn" data-testid="button-districts">🏙️ Districts</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+</body>
+</html>

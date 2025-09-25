@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Pod - Unhinged Stages</title>
+  <link rel="stylesheet" href="stages.css">
+  <link rel="stylesheet" href="video-pod.css">
+  <script type="module" src="../js/firebase.js"></script>
+  <script type="module" src="video-pod.js"></script>
+</head>
+<body>
+  <div id="video-pod-container">
+    
+    <!-- Video Pod Header -->
+    <header class="video-pod-header">
+      <div class="pod-info">
+        <div class="pod-icon">📹</div>
+        <div class="pod-details">
+          <h1 id="pod-title" data-testid="text-pod-title">Loading...</h1>
+          <p id="pod-description" data-testid="text-pod-description">Connecting to video pod...</p>
+        </div>
+      </div>
+      
+      <div class="pod-controls">
+        <div class="participant-indicator" data-testid="container-participant-indicator">
+          <span class="count-icon">👥</span>
+          <span id="current-participants" data-testid="text-current-participants">0</span>
+          <span>/</span>
+          <span id="max-participants" data-testid="text-max-participants">6</span>
+        </div>
+        <button id="pod-settings-btn" class="header-control-btn" data-testid="button-pod-settings" title="Pod Settings">⚙️</button>
+        <button id="leave-pod-btn" class="leave-btn" data-testid="button-leave-pod">Leave Pod</button>
+      </div>
+    </header>
+
+    <!-- Main Video Pod Interface -->
+    <div class="video-pod-main">
+      
+      <!-- Video Grid Area -->
+      <div class="video-area" data-testid="container-video-area">
+        <div class="video-grid" id="video-grid" data-testid="grid-video">
+          <!-- Video streams will be dynamically added here -->
+        </div>
+        
+        <!-- Connection Status -->
+        <div class="connection-status" id="connection-status" data-testid="container-connection-status">
+          <div class="status-indicator connecting">
+            <div class="status-dot"></div>
+            <span>Connecting...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Control Panel -->
+      <div class="control-panel" data-testid="container-control-panel">
+        
+        <!-- Media Controls -->
+        <div class="media-controls">
+          <button id="camera-btn" class="media-btn enabled" data-testid="button-camera" title="Toggle Camera">
+            <span class="btn-icon" id="camera-icon">📹</span>
+            <span class="btn-label">Camera</span>
+          </button>
+          
+          <button id="microphone-btn" class="media-btn enabled" data-testid="button-microphone" title="Toggle Microphone">
+            <span class="btn-icon" id="mic-icon">🎙️</span>
+            <span class="btn-label">Mic</span>
+          </button>
+          
+          <button id="screen-share-btn" class="media-btn" data-testid="button-screen-share" title="Share Screen">
+            <span class="btn-icon">🖥️</span>
+            <span class="btn-label">Screen</span>
+          </button>
+        </div>
+
+        <!-- Chat Toggle -->
+        <div class="chat-controls">
+          <button id="toggle-chat-btn" class="control-btn active" data-testid="button-toggle-chat">
+            <span class="btn-icon">💬</span>
+            <span class="btn-label">Chat</span>
+          </button>
+        </div>
+
+        <!-- Host Controls (if host) -->
+        <div class="host-controls" id="host-controls" style="display: none;" data-testid="container-host-controls">
+          <button id="mute-all-btn" class="control-btn" data-testid="button-mute-all-participants">
+            <span class="btn-icon">🔇</span>
+            <span class="btn-label">Mute All</span>
+          </button>
+          
+          <button id="record-btn" class="control-btn" data-testid="button-record-session">
+            <span class="btn-icon">⏺️</span>
+            <span class="btn-label">Record</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Chat Sidebar -->
+    <div class="chat-sidebar" id="chat-sidebar" data-testid="container-chat-sidebar">
+      <div class="chat-header">
+        <h3>💬 Pod Chat</h3>
+        <button class="close-chat-btn" id="close-chat-btn" data-testid="button-close-chat">✖️</button>
+      </div>
+      
+      <div class="chat-messages" id="chat-messages" data-testid="container-chat-messages">
+        <!-- Chat messages will appear here -->
+      </div>
+      
+      <div class="chat-input-container">
+        <input 
+          type="text" 
+          id="chat-input" 
+          placeholder="Type a message..." 
+          maxlength="200"
+          data-testid="input-chat-message"
+        >
+        <button id="send-chat-btn" data-testid="button-send-chat">Send</button>
+      </div>
+    </div>
+
+    <!-- Participant List Overlay -->
+    <div class="participants-overlay" id="participants-overlay" style="display: none;" data-testid="container-participants-overlay">
+      <div class="participants-list">
+        <div class="participants-header">
+          <h3>Participants</h3>
+          <button class="close-participants-btn" id="close-participants-btn" data-testid="button-close-participants">×</button>
+        </div>
+        
+        <div class="participants-content" id="participants-content" data-testid="list-participants">
+          <!-- Participants will be listed here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Permission Request Modal -->
+    <div class="modal-backdrop" id="permission-modal-backdrop" style="display: none;" data-testid="modal-permissions">
+      <div class="modal-content permission-modal">
+        <div class="modal-header">
+          <h2>Camera & Microphone Access</h2>
+        </div>
+        
+        <div class="permission-content">
+          <div class="permission-icon">📹🎙️</div>
+          <p>This video pod requires access to your camera and microphone to participate in video chat.</p>
+          <p>Please allow access when prompted by your browser.</p>
+          
+          <div class="permission-steps">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div class="step-text">Click "Allow" when prompted</div>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <div class="step-text">Adjust your camera and microphone settings</div>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <div class="step-text">Start chatting with other participants!</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="cancel-btn" id="deny-permissions-btn" data-testid="button-deny-permissions">Join Audio Only</button>
+          <button class="submit-btn" id="request-permissions-btn" data-testid="button-request-permissions">Enable Camera & Mic</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pod Settings Modal -->
+    <div class="modal-backdrop" id="settings-modal-backdrop" style="display: none;" data-testid="modal-pod-settings">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Pod Settings</h2>
+          <button class="close-btn" id="close-pod-settings-btn" data-testid="button-close-settings">×</button>
+        </div>
+        
+        <div class="settings-content">
+          <div class="setting-section">
+            <h4>Video Quality</h4>
+            <select id="video-quality" data-testid="select-video-quality">
+              <option value="low">Low (240p)</option>
+              <option value="medium" selected>Medium (480p)</option>
+              <option value="high">High (720p)</option>
+            </select>
+          </div>
+          
+          <div class="setting-section">
+            <h4>Audio Settings</h4>
+            <label>
+              <input type="checkbox" id="noise-cancellation" checked data-testid="checkbox-noise-cancellation">
+              Enable noise cancellation
+            </label>
+            <label>
+              <input type="checkbox" id="echo-cancellation" checked data-testid="checkbox-echo-cancellation">
+              Enable echo cancellation
+            </label>
+          </div>
+          
+          <div class="setting-section" id="host-only-settings" style="display: none;">
+            <h4>Host Settings</h4>
+            <label>
+              <input type="checkbox" id="auto-mute-new" data-testid="checkbox-auto-mute-new">
+              Auto-mute new participants
+            </label>
+            <label>
+              <input type="checkbox" id="allow-screen-share" checked data-testid="checkbox-allow-screen-share">
+              Allow screen sharing
+            </label>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="cancel-btn" id="cancel-pod-settings-btn" data-testid="button-cancel-settings">Cancel</button>
+          <button class="submit-btn" id="save-pod-settings-btn" data-testid="button-save-settings">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen Share Preview -->
+    <div class="screen-share-preview" id="screen-share-preview" style="display: none;" data-testid="container-screen-share">
+      <div class="preview-header">
+        <span>You're sharing your screen</span>
+        <button class="stop-share-btn" id="stop-screen-share-btn" data-testid="button-stop-share">Stop Sharing</button>
+      </div>
+      <video id="screen-preview" autoplay muted data-testid="video-screen-preview"></video>
+    </div>
+
+    <!-- Connection Issues Alert -->
+    <div class="connection-alert" id="connection-alert" style="display: none;" data-testid="container-connection-alert">
+      <div class="alert-content">
+        <span class="alert-icon">⚠️</span>
+        <span class="alert-message" id="alert-message">Connection issues detected</span>
+        <button class="alert-close" id="dismiss-alert-btn" data-testid="button-dismiss-alert">×</button>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

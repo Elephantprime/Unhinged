@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unhinged World - Hub</title>
+  <link rel="stylesheet" href="world.css">
+  <script type="module" src="../js/firebase.js"></script>
+  <script type="module" src="../js/profile-gate.js"></script>
+  <script src="../js/photo-utils.js"></script>
+  <script src="../js/avatar-utils.js?v=20250916"></script>
+  <script type="module" src="world.js"></script>
+</head>
+<body>
+  <div id="world-container">
+    
+    <!-- Header -->
+    <header class="world-header">
+      <h1>🌍 Unhinged World</h1>
+      <p class="world-subtitle">Your gateway to chaos, connection, and community</p>
+      <div class="user-info">
+        <!-- Points Display -->
+        <div id="userPointsDisplay" class="btn points-display" data-testid="button-points" title="View leaderboard" style="background: linear-gradient(135deg, #ffd700, #ffb347); border-color: #ffd700; color: #000; font-weight: bold; cursor: pointer; margin-right: 15px; display: none;" onclick="window.location.href='../leaderboard.html'">
+          🏆 <span id="userPointsCount">0</span> pts
+        </div>
+        <img id="user-avatar" src="https://i.pravatar.cc/50" alt="Your Avatar">
+        <span id="user-name">Loading...</span>
+        <div class="user-status">
+          <select id="mood-selector">
+            <option value="available">😊 Available</option>
+            <option value="ghosting">👻 Ghosting</option>
+            <option value="drama">🎭 Here for Drama</option>
+            <option value="chill">😎 Just Chilling</option>
+            <option value="flirty">😘 Feeling Flirty</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- Primary Town Square Section -->
+    <div class="town-square-hero">
+      <div class="hero-content">
+        <div class="hero-header">
+          <h2>🏛️ Town Square</h2>
+          <p>The heartbeat of Unhinged World</p>
+        </div>
+        
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-icon">👥</span>
+            <span class="stat-number" id="active-users-hero">Loading...</span>
+            <span class="stat-label">Online</span>
+          </div>
+          <div class="stat-item" onclick="window.location.href='../leaderboard.html'" style="cursor: pointer; transition: transform 0.2s;" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'">
+            <span class="stat-icon" style="color: #ffd700;">🏆</span>
+            <span class="stat-number" id="leaderboard-count-hero">Loading...</span>
+            <span class="stat-label">Top Players</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-icon">🎤</span>
+            <span class="stat-number" id="live-events-hero">Loading...</span>
+            <span class="stat-label">Live Events</span>
+          </div>
+        </div>
+        
+        <div class="hero-actions">
+          <button class="primary-action-btn" data-destination="feed" data-testid="button-enter-feed">
+            Enter Town Square
+          </button>
+          <button class="secondary-action-btn" id="quick-pulse-btn" data-testid="button-world-pulse">
+            💗 World Pulse
+          </button>
+        </div>
+        
+        <div class="recent-activity">
+          <h4>Latest from the Square</h4>
+          <div class="activity-preview" id="activity-preview">
+            <div class="activity-item">
+              <span class="activity-icon">💬</span>
+              <span class="activity-text">Sarah just shared some spicy tea in Town Square</span>
+              <span class="activity-time">2m ago</span>
+            </div>
+            <div class="activity-item">
+              <span class="activity-icon">🔥</span>
+              <span class="activity-text">Hot Seat event is getting wild with 15 participants</span>
+              <span class="activity-time">5m ago</span>
+            </div>
+            <div class="activity-item">
+              <span class="activity-icon">🎮</span>
+              <span class="activity-text">New game "Would You Still?" launched in Arcade</span>
+              <span class="activity-time">12m ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Lounge Tables Section -->
+    <div class="lounge-tables-section">
+      <h3 class="nav-section-title">🏠 Active Lounge Tables</h3>
+      <div class="lounge-tables-container" id="lounge-tables-container">
+        <div class="loading-state" id="lounge-loading">
+          <span>Loading active tables...</span>
+        </div>
+        <div class="empty-state" id="lounge-empty" style="display: none;">
+          <span>No active tables right now. Be the first to join the Lounge!</span>
+        </div>
+        <div class="tables-grid" id="lounge-tables-grid"></div>
+      </div>
+    </div>
+
+    <!-- World Navigation Grid -->
+    <div class="world-nav-section">
+      <h3 class="nav-section-title">Explore Unhinged World</h3>
+      <div class="world-nav-grid">
+        
+        <!-- Lounge Tile -->
+        <div class="nav-tile lounge-tile" data-destination="lounge" data-testid="nav-lounge">
+          <div class="tile-icon">🏠</div>
+          <h4>Lounge</h4>
+          <p>Social Hub</p>
+          <div class="tile-stats">
+            <span id="lounge-users">Join the social hub</span>
+          </div>
+        </div>
+
+        <!-- Arcade Tile -->
+        <div class="nav-tile arcade-tile" data-destination="arcade" data-testid="nav-arcade">
+          <div class="tile-icon">🎮</div>
+          <h4>Arcade</h4>
+          <p>Games & Play</p>
+          <div class="tile-stats">
+            <span id="arcade-games">Play & connect</span>
+          </div>
+        </div>
+
+        <!-- Stages Tile -->
+        <div class="nav-tile stages-tile" data-destination="stages" data-testid="nav-stages">
+          <div class="tile-icon">🎤</div>
+          <h4>Stages</h4>
+          <p>Live Events</p>
+          <div class="tile-stats">
+            <span id="live-events">Join live events</span>
+          </div>
+        </div>
+
+        <!-- Districts Tile -->
+        <div class="nav-tile districts-tile" data-destination="districts" data-testid="nav-districts">
+          <div class="tile-icon">🏙️</div>
+          <h4>Districts</h4>
+          <p>Themed Zones</p>
+          <div class="tile-stats">
+            <span id="district-zones">Explore themed areas</span>
+          </div>
+        </div>
+
+        <!-- Passports Tile -->
+        <div class="nav-tile passports-tile" data-destination="passports" data-testid="nav-passports">
+          <div class="tile-icon">📔</div>
+          <h4>Passports</h4>
+          <p>Your Journey</p>
+          <div class="tile-stats">
+            <span id="stamps-count">Track your journey</span>
+          </div>
+        </div>
+
+        <!-- Leaderboard Tile -->
+        <div class="nav-tile leaderboard-tile" onclick="window.location.href='../leaderboard.html'" data-testid="nav-leaderboard" style="border: 2px solid #ffd700; background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 107, 0, 0.1)); cursor: pointer;">
+          <div class="tile-icon" style="color: #ffd700;">🏆</div>
+          <h4 style="color: #ffd700;">Leaderboard</h4>
+          <p>Rankings & Achievements</p>
+          <div class="tile-stats">
+            <span id="leaderboard-stats">View top players</span>
+          </div>
+        </div>
+
+        <!-- Spotlight Tile -->
+        <div class="nav-tile spotlight-tile" data-destination="spotlight" data-testid="nav-spotlight">
+          <div class="tile-icon">⭐</div>
+          <h4>Spotlight</h4>
+          <p>Global Highlight</p>
+          <div class="tile-stats">
+            <span id="current-spotlight">Be in the spotlight</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Quick Actions Bar -->
+    <div class="quick-actions">
+      <button class="quick-btn" id="daily-missions" onclick="window.location.href='../daily-missions.html'" data-testid="button-daily-missions" style="background: linear-gradient(135deg, #9c27b0, #673ab7); border-color: #9c27b0; color: white; font-weight: bold;">🎯 Daily Missions</button>
+      <button class="quick-btn" id="leaderboards" onclick="window.location.href='../leaderboard.html'" style="background: linear-gradient(135deg, #ffd700, #ff6b00); color: #000; font-weight: bold;">🏆 Leaderboards</button>
+      <button class="quick-btn" id="notifications">🔔 Notifications</button>
+      <button class="quick-btn" id="world-chat">💬 World Chat</button>
+    </div>
+
+    <!-- Navigation Back -->
+    <div class="nav-back" style="display: flex; justify-content: center; gap: 15px; margin-top: 30px; flex-wrap: wrap;">
+      <a href="../app.html" class="back-btn" data-testid="button-community" style="background: linear-gradient(99deg, #E11D2A 40%, #ff6b00 100%); color: #fff; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 700; transition: all 0.2s;">🔥 Community</a>
+      <a href="../chaos.html" class="back-btn" data-testid="button-chaos" style="background: linear-gradient(99deg, #16161c 30%, #ff6b00 100%); color: #fff; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 700; transition: all 0.2s;">💔 Chaos Wall</a>
+      <a href="../profile.html" class="back-btn" data-testid="button-profile" style="background: linear-gradient(99deg, #16161c 50%, #e11d2a 100%); color: #fff; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 700; transition: all 0.2s;">👤 Profile</a>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Room - Unhinged Stages</title>
+  <link rel="stylesheet" href="stages.css">
+  <link rel="stylesheet" href="audio-room.css">
+  <script type="module" src="../js/firebase.js"></script>
+  <script type="module" src="audio-room.js"></script>
+</head>
+<body>
+  <div id="audio-room-container">
+    
+    <!-- Audio Room Header -->
+    <header class="audio-room-header">
+      <div class="room-info">
+        <div class="room-icon">🎙️</div>
+        <div class="room-details">
+          <h1 id="room-title" data-testid="text-room-title">Loading...</h1>
+          <p id="room-description" data-testid="text-room-description">Connecting to audio room...</p>
+        </div>
+      </div>
+      
+      <div class="room-controls">
+        <div class="participant-count" data-testid="container-participant-count">
+          <span class="count-icon">👥</span>
+          <span id="total-participants" data-testid="text-participant-count">0</span>
+        </div>
+        <button id="leave-room-btn" class="leave-btn" data-testid="button-leave-room">Leave Room</button>
+      </div>
+    </header>
+
+    <!-- Main Audio Room Interface -->
+    <div class="audio-room-main">
+      
+      <!-- Speaker Stage Area -->
+      <div class="speaker-stage" data-testid="container-speaker-stage">
+        <div class="stage-header">
+          <h2>🎤 Speakers</h2>
+          <div class="stage-controls" id="host-controls" style="display: none;" data-testid="container-host-controls">
+            <button id="mute-all-btn" class="control-btn" data-testid="button-mute-all">Mute All</button>
+            <button id="manage-speakers-btn" class="control-btn" data-testid="button-manage-speakers">Manage</button>
+          </div>
+        </div>
+        
+        <div class="speakers-grid" id="speakers-grid" data-testid="grid-speakers">
+          <!-- Speakers will be dynamically loaded here -->
+        </div>
+        
+        <div class="speaker-queue" id="speaker-queue" data-testid="container-speaker-queue">
+          <h3>🙋 Raised Hands</h3>
+          <div class="queue-list" id="queue-list" data-testid="list-speaker-queue">
+            <!-- Queue will be populated here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Audience and Chat Area -->
+      <div class="audience-area">
+        
+        <!-- Audience Interaction Panel -->
+        <div class="interaction-panel" data-testid="container-interaction-panel">
+          <div class="user-controls">
+            <button id="raise-hand-btn" class="interaction-btn" data-testid="button-raise-hand">
+              <span class="btn-icon">🙋</span>
+              <span class="btn-text">Raise Hand</span>
+            </button>
+            
+            <button id="reaction-btn" class="interaction-btn" data-testid="button-reactions">
+              <span class="btn-icon">👏</span>
+              <span class="btn-text">React</span>
+            </button>
+            
+            <div class="audio-controls">
+              <button id="mute-btn" class="audio-btn muted" data-testid="button-mute" title="Unmute">
+                <span id="mute-icon">🔇</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Quick Reactions -->
+          <div class="quick-reactions" id="quick-reactions" style="display: none;" data-testid="container-reactions">
+            <button class="reaction-btn" data-reaction="👏" data-testid="button-reaction-clap">👏</button>
+            <button class="reaction-btn" data-reaction="❤️" data-testid="button-reaction-heart">❤️</button>
+            <button class="reaction-btn" data-reaction="😂" data-testid="button-reaction-laugh">😂</button>
+            <button class="reaction-btn" data-reaction="👍" data-testid="button-reaction-thumbs">👍</button>
+            <button class="reaction-btn" data-reaction="🔥" data-testid="button-reaction-fire">🔥</button>
+            <button class="reaction-btn" data-reaction="💯" data-testid="button-reaction-hundred">💯</button>
+          </div>
+        </div>
+
+        <!-- Live Chat -->
+        <div class="chat-container" data-testid="container-chat">
+          <div class="chat-header">
+            <h3>💬 Live Chat</h3>
+            <div class="chat-controls">
+              <button id="clear-chat-btn" class="chat-control-btn" data-testid="button-clear-chat" title="Clear Chat">🗑️</button>
+              <button id="chat-settings-btn" class="chat-control-btn" data-testid="button-chat-settings" title="Chat Settings">⚙️</button>
+            </div>
+          </div>
+          
+          <div class="chat-messages" id="chat-messages" data-testid="container-chat-messages">
+            <!-- Chat messages will appear here -->
+          </div>
+          
+          <div class="chat-input-container">
+            <input 
+              type="text" 
+              id="chat-input" 
+              placeholder="Type your message..." 
+              maxlength="300"
+              data-testid="input-chat-message"
+            >
+            <button id="send-chat-btn" data-testid="button-send-chat">Send</button>
+          </div>
+        </div>
+
+        <!-- Audience Members -->
+        <div class="audience-section" data-testid="container-audience">
+          <div class="audience-header">
+            <h3>👥 Audience (<span id="audience-count" data-testid="text-audience-count">0</span>)</h3>
+            <button id="toggle-audience-btn" class="toggle-btn" data-testid="button-toggle-audience">Hide</button>
+          </div>
+          
+          <div class="audience-list" id="audience-list" data-testid="list-audience">
+            <!-- Audience members will be listed here -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Reaction Animations Container -->
+    <div class="reaction-animations" id="reaction-animations" data-testid="container-reaction-animations">
+      <!-- Flying reaction animations will appear here -->
+    </div>
+
+    <!-- Speaker Management Modal (Host Only) -->
+    <div class="modal-backdrop" id="speaker-modal-backdrop" style="display: none;" data-testid="modal-speaker-management">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Manage Speakers</h2>
+          <button class="close-btn" id="close-speaker-modal-btn" data-testid="button-close-speaker-modal">×</button>
+        </div>
+        
+        <div class="speaker-management">
+          <div class="current-speakers" data-testid="container-current-speakers">
+            <h3>Current Speakers</h3>
+            <div id="current-speakers-list" data-testid="list-current-speakers">
+              <!-- Current speakers list -->
+            </div>
+          </div>
+          
+          <div class="pending-requests" data-testid="container-pending-requests">
+            <h3>Pending Requests</h3>
+            <div id="pending-requests-list" data-testid="list-pending-requests">
+              <!-- Pending speaker requests -->
+            </div>
+          </div>
+          
+          <div class="audience-promote" data-testid="container-audience-promote">
+            <h3>Promote from Audience</h3>
+            <div id="audience-promote-list" data-testid="list-audience-promote">
+              <!-- Audience members who can be promoted -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Room Settings Modal -->
+    <div class="modal-backdrop" id="settings-modal-backdrop" style="display: none;" data-testid="modal-room-settings">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Room Settings</h2>
+          <button class="close-btn" id="close-room-settings-btn" data-testid="button-close-settings">×</button>
+        </div>
+        
+        <div class="room-settings">
+          <div class="setting-group">
+            <label for="room-theme">Room Theme</label>
+            <select id="room-theme" data-testid="select-room-theme">
+              <option value="dating">💕 Dating Chat</option>
+              <option value="debate">⚖️ Debate Room</option>
+              <option value="confessions">🤐 Confessions</option>
+              <option value="storytime">📚 Story Time</option>
+              <option value="advice">💡 Advice Corner</option>
+              <option value="gaming">🎮 Gaming Talk</option>
+            </select>
+          </div>
+          
+          <div class="setting-group">
+            <label>
+              <input type="checkbox" id="auto-mute-audience" data-testid="checkbox-auto-mute">
+              Auto-mute new audience members
+            </label>
+          </div>
+          
+          <div class="setting-group">
+            <label>
+              <input type="checkbox" id="allow-reactions" checked data-testid="checkbox-allow-reactions">
+              Allow audience reactions
+            </label>
+          </div>
+          
+          <div class="setting-group">
+            <label>
+              <input type="checkbox" id="moderate-chat" data-testid="checkbox-moderate-chat">
+              Moderate chat messages
+            </label>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="cancel-btn" id="cancel-room-settings-btn" data-testid="button-cancel-settings">Cancel</button>
+          <button class="submit-btn" id="save-room-settings-btn" data-testid="button-save-settings">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
