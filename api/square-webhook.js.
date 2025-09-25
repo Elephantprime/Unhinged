@@ -1,0 +1,102 @@
+// api/square-webhook.js
+import crypto from "crypto";
+import { Client, Environment } from "@square/square";
+import * as admin from "firebase-admin";
+
+const app = !admin.apps.length
+  ? admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
+      }),
+    })
+  : admin.app();
+
+export const config = {
+  api: {
+    bodyParser: false, // we need raw body for signature verification
+  },
+};
+
+function readRawBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = [];
+    req.on("data", (chunk) => data.push(chunk));
+    req.on("end", () => resolve(Buffer.concat(data)));
+    req.on("error", reject);
+  });
+}
+
+function verifySquareSignature(signatureKey, signatureHeader, notificationUrl, rawBody) {
+  // Square HMAC SHA-256 of notificationUrl + body (as string)
+  const hmac = crypto.createHmac("sha256", signatureKey);
+  hmac.update(notificationUrl + rawBody.toString());
+  const expected = hmac.digest("base64");
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader || "", "utf8"));
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).end();
+
+  try {
+    const rawBody = await readRawBody(req);
+    const sig = req.headers["x-square-hmacsha256-signature"];
+    const signatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+    const notificationUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}${req.url}`;
+
+    if (!verifySquareSignature(signatureKey, sig, notificationUrl, rawBody)) {
+      console.error("Invalid Square signature");
+      return res.status(401).end();
+    }
+
+    const event = JSON.parse(rawBody.toString());
+    const type = event?.type || "";
+    // We’ll react on payment updates that reach COMPLETED
+    if (!type.startsWith("payment.")) {
+      return res.status(200).json({ ok: true }); // ignore others for now
+    }
+
+    const client = new Client({
+      accessToken: process.env.SQUARE_ACCESS_TOKEN,
+      environment: (process.env.SQUARE_ENVIRONMENT || "sandbox") === "production"
+        ? Environment.Production
+        : Environment.Sandbox,
+    });
+
+    const payment = event?.data?.object?.payment;
+    if (!payment) return res.status(200).json({ ok: true });
+
+    if (payment.status !== "COMPLETED") {
+      return res.status(200).json({ ok: true }); // not paid yet
+    }
+
+    // Get the order to retrieve metadata.uid
+    const orderId = payment.orderId;
+    if (!orderId) return res.status(200).json({ ok: true });
+
+    const { result: orderResult } = await client.ordersApi.retrieveOrder(orderId);
+    const uid = orderResult?.order?.metadata?.uid || orderResult?.order?.referenceId;
+
+    if (!uid) {
+      console.warn("Payment completed but no UID in order metadata/referenceId.");
+      return res.status(200).json({ ok: true });
+    }
+
+    // Update Firestore: users/{uid}.membership
+    const db = admin.firestore(app);
+    await db.collection("users").doc(uid).set({
+      membership: {
+        tier: "paid",
+        provider: "square",
+        lastPaymentId: payment.id,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+    }, { merge: true });
+
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error("webhook error:", err);
+    return res.status(500).end();
+  }
+}
