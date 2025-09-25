@@ -1,324 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unhinged - Profile</title>
-    <style>
-        body {
-            margin: 0;
-            background: #1a1a1a;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            padding: 20px;
-        }
-
-        .button-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .button-row {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .btn {
-            padding: 10px 18px;
-            border: none;
-            border-radius: 25px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-
-        /* Button Colors - Matching Screenshot */
-        .btn-points {
-            background: #ffc107;
-            color: #000;
-        }
-
-        .btn-gray {
-            background: #666;
-            color: white;
-        }
-
-        .btn-red {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-gradient {
-            background: linear-gradient(45deg, #ff4458, #ff6b00);
-            color: white;
-        }
-
-        .btn-dark-red {
-            background: #8b0000;
-            color: white;
-        }
-
-        .username {
-            text-align: center;
-            font-size: 18px;
-            color: #ccc;
-            margin: 15px 0;
-        }
-
-        .profile-photo-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 30px;
-        }
-
-        .profile-photo {
-            width: 350px;
-            height: 500px;
-            border-radius: 20px;
-            object-fit: cover;
-            cursor: pointer;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-        }
-
-        /* Action buttons for functionality */
-        .action-buttons {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 20px;
-            z-index: 1000;
-        }
-
-        .action-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            transition: all 0.2s;
-        }
-
-        .action-btn:hover {
-            transform: scale(1.1);
-        }
-
-        .pass-btn {
-            background: #dc3545;
-            color: white;
-        }
-
-        .like-btn {
-            background: #28a745;
-            color: white;
-        }
-
-        .recycle-btn {
-            background: #ffc107;
-            color: #000;
-        }
-
-        @media (max-width: 768px) {
-            .btn {
-                padding: 8px 14px;
-                font-size: 13px;
-            }
-            
-            .profile-photo {
-                width: 300px;
-                height: 400px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unhinged - Profile</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="js/firebase.js" type="module"></script>
+  <script src="js/profile_lock.js" defer></script>
+  <script src="js/profile-modal.js" defer></script>
+  <script src="js/recycling-bin.js" defer></script>
+  <script src="js/deck-filters.js" defer></script>
+  <script src="js/matching.js" defer></script>
+  <script src="js/districts-chat-engine.js" defer></script>
+  <script src="js/casualties-manager.js" defer></script>
+  <script src="js/wire-clean-buttons.js" defer></script>
 </head>
 <body>
-    <!-- Button Layout Exactly From Screenshot -->
-    <div class="button-container">
-        <!-- Row 1: 🏆 310pts | Filter | Inbox | Browse Matches -->
-        <div class="button-row">
-            <button class="btn btn-points">🏆 310pts</button>
-            <button class="btn btn-gray">Filter</button>
-            <button class="btn btn-gray">Inbox</button>
-            <button class="btn btn-gradient">Browse Matches</button>
-        </div>
-
-        <!-- Row 2: Casualties Upload | 🗑️ Recycling Bin -->
-        <div class="button-row">
-            <button class="btn btn-dark-red">Casualties Upload</button>
-            <button class="btn btn-gray">🗑️ Recycling Bin</button>
-        </div>
-
-        <!-- Username -->
-        <div class="username">@Unfavorablejosh</div>
-
-        <!-- Row 3: Community Chaos | My Profile | Go Paid -->
-        <div class="button-row">
-            <button class="btn btn-red">Community Chaos</button>
-            <button class="btn btn-gray">My Profile</button>
-            <button class="btn btn-gradient">Go Paid</button>
-        </div>
-
-        <!-- Row 4: Edit Profile | Logout | Delete -->
-        <div class="button-row">
-            <button class="btn btn-red">Edit Profile</button>
-            <button class="btn btn-gray">Logout</button>
-            <button class="btn btn-dark-red">Delete</button>
-        </div>
+  <div class="button-container">
+    <div class="button-row">
+      <button class="btn btn-points" id="userPoints" onclick="window.location.href='leaderboard.html'">🏆 310pts</button>
+      <button class="btn btn-gray" id="filterBtn" onclick="applyFilters()">Filter</button>
+      <button class="btn btn-gray" id="inboxBtn" onclick="openChatInbox()">Inbox</button>
+      <button class="btn btn-gradient" id="browseMatchesBtn" onclick="startMatchingDeck()">Browse Matches</button>
     </div>
-
-    <!-- Profile Photo Area -->
-    <div class="profile-photo-container">
-        <img id="profilePhoto" class="profile-photo" 
-             src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=350&h=500&fit=crop&crop=face" 
-             alt="Profile Photo" />
+    <div class="button-row">
+      <button class="btn btn-dark-red" id="casualtiesUploadBtn" onclick="openCasualtiesUploader()">Casualties Upload</button>
+      <button class="btn btn-gray" id="recycleBtn" onclick="recycleProfiles()">🗑️ Recycling Bin ♻️</button>
     </div>
-
-    <!-- Action Buttons for Like/Pass/Recycle -->
-    <div class="action-buttons">
-        <button class="action-btn pass-btn" id="passBtn" title="Pass">❌</button>
-        <button class="action-btn like-btn" id="likeBtn" title="Like">❤️</button>
-        <button class="action-btn recycle-btn" id="recycleBtn" title="Recycle">♻️</button>
+    <div class="button-row">
+      <button class="btn btn-red" id="chaosBtn" onclick="window.location.href='chaos.html'">Community Chaos</button>
+      <button class="btn btn-gray" id="myProfileBtn" onclick="openProfileModal()">My Profile</button>
+      <button class="btn btn-gradient" id="goPaidBtn">Go Paid</button>
     </div>
-
-    <script type="module">
-        // Import Firebase directly from CDN
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, query, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDHqhU5fDxG-GW2hfUVrcHCCxBzPdHd5-M",
-            authDomain: "unhinged-8c6da.firebaseapp.com",
-            projectId: "unhinged-8c6da",
-            storageBucket: "unhinged-8c6da.appspot.com",
-            messagingSenderId: "248472796860",
-            appId: "1:248472796860:web:9d8d043e7fb051acf5dab9",
-            measurementId: "G-6BC5YCV33Q"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        
-        let currentUser = null;
-        let currentDeck = [];
-        let currentIndex = 0;
-
-        // Initialize
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                console.log('✅ User authenticated:', user.uid);
-                
-                // Load profiles
-                await loadProfiles();
-                if (currentDeck.length > 0) {
-                    showCurrentProfile();
-                }
-                
-                // Wire up action buttons
-                document.getElementById('passBtn').addEventListener('click', passProfile);
-                document.getElementById('likeBtn').addEventListener('click', likeProfile);
-                document.getElementById('recycleBtn').addEventListener('click', recycleProfiles);
-                
-            } else {
-                // Demo mode
-                currentUser = { uid: 'demo' };
-                currentDeck = [
-                    { 
-                        displayName: 'Demo User', 
-                        uid: 'demo1',
-                        photos: ['https://images.unsplash.com/photo-1494790108755-2616b612b647?w=350&h=500&fit=crop&crop=face']
-                    }
-                ];
-                showCurrentProfile();
-            }
-        });
-
-        async function loadProfiles() {
-            try {
-                const usersQuery = query(collection(db, 'users'), limit(10));
-                const snapshot = await getDocs(usersQuery);
-                currentDeck = [];
-                
-                snapshot.forEach(doc => {
-                    const userData = doc.data();
-                    if (userData.uid !== currentUser.uid) {
-                        currentDeck.push(userData);
-                    }
-                });
-                
-                console.log('📊 Loaded', currentDeck.length, 'profiles');
-            } catch (error) {
-                console.error('Error loading profiles:', error);
-            }
-        }
-
-        function showCurrentProfile() {
-            const profile = currentDeck[currentIndex];
-            if (!profile) {
-                document.getElementById('profilePhoto').src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=350&h=500&fit=crop&crop=face';
-                return;
-            }
-
-            // Show profile photo
-            let photoUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=350&h=500&fit=crop&crop=face';
-            
-            if (profile.photoURL && profile.photoURL.includes('http')) {
-                photoUrl = profile.photoURL;
-            } else if (profile.photos && profile.photos.length > 0 && profile.photos[0].includes('http')) {
-                photoUrl = profile.photos[0];
-            }
-
-            document.getElementById('profilePhoto').src = photoUrl;
-            console.log('👤 Showing profile:', profile.displayName || 'Unknown');
-        }
-
-        function nextProfile() {
-            currentIndex++;
-            if (currentIndex >= currentDeck.length) {
-                currentIndex = 0;
-                console.log('🔄 End of deck - restarting');
-            }
-            showCurrentProfile();
-        }
-
-        async function passProfile() {
-            console.log('❌ Pass clicked');
-            nextProfile();
-        }
-
-        async function likeProfile() {
-            console.log('❤️ Like clicked');
-            nextProfile();
-        }
-
-        async function recycleProfiles() {
-            console.log('♻️ Recycle clicked');
-            currentIndex = 0;
-            showCurrentProfile();
-        }
-    </script>
-</body>
+    <div class="button-row">
+      <button class="btn btn-red" id="editProfileBtn" onclick="editUserProfile()">Edit Profile</button>
+      <button class="btn btn-gray" id="logoutBtn" onclick="logoutUser()">Logout</button>
+      <button class="btn btn-dark-red" id="deleteBtn" onclick="deleteUserAccount()">Delete</button>
+    </div>
+  </div>  <h3 id="username">@Loading...</h3>
+  <img id="profilePhoto" class="profile-photo" src="" alt="Profile Photo"/>  <div class="action-buttons">
+    <button class="action-btn pass-btn" id="passBtn">❌</button>
+    <button class="action-btn like-btn" id="likeBtn">❤️</button>
+  </div>  <script>
+    // Basic click wiring for preview test (ensure all are firing in actual build)
+    function applyFilters() { console.log("🔎 Filter triggered"); }
+    function openChatInbox() { console.log("📨 Inbox opened"); }
+    function startMatchingDeck() { console.log("❤️ Matching started"); }
+    function openCasualtiesUploader() { console.log("📝 Upload triggered"); }
+    function openProfileModal() { console.log("👤 Profile modal opened"); }
+    function editUserProfile() { console.log("✏️ Edit Profile"); }
+    function logoutUser() { console.log("🚪 Logged out"); }
+    function deleteUserAccount() { console.log("💥 Delete triggered"); }
+  </script></body>
 </html>
