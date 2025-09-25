@@ -1,0 +1,19 @@
+<svg width="86" height="86" viewBox="0 0 86 86" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="86" height="86" rx="24" fill="#181925"/>
+  <g filter="url(#glowBlue)">
+    <path d="M43 15L67 23.5V44C67 62.5 43 75 43 75C43 75 19 62.5 19 44V23.5L43 15Z" stroke="#44D9FF" stroke-width="2.5"/>
+    <circle cx="43" cy="44" r="10" stroke="#44D9FF" stroke-width="2"/>
+    <path d="M39 45.5L42.5 49L48 41.5" stroke="#44D9FF" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+  <rect x="24" y="65" width="38" height="12" rx="6" fill="#1BFAFF"/>
+  <text x="43" y="74.5" text-anchor="middle" fill="#181925" font-size="9.5" font-family="Montserrat, Arial Black, Arial, sans-serif" font-weight="bold">BADGES</text>
+  <defs>
+    <filter id="glowBlue" x="0" y="0" width="86" height="86" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+</svg>
