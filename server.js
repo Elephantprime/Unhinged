@@ -38,21 +38,24 @@ app.use(express.urlencoded({ extended: true }));
 
 // Firebase handles authentication client-side, no server redirects needed
 
-// Serve static files from public directory with AGGRESSIVE cache busting
+// Serve static files from public directory with RELAXED cache busting  
 app.use(express.static('public', {
   setHeaders: (res, path, stat) => {
-    // AGGRESSIVE cache busting for ALL files to force browser refresh
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.setHeader('Last-Modified', new Date().toUTCString());
-    res.setHeader('ETag', Date.now().toString());
+    // RELAXED cache busting - allow brief JS caching, longer for CSS/images
+    if (path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+    } else if (path.endsWith('.js')) {
+      res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate'); // 5 min cache for JS
+    } else {
+      res.setHeader('Cache-Control', 'max-age=300'); // 5 minute cache for CSS/images
+    }
   }
 }));
 
-// Redirect root URL to login page
+// Serve login page directly (no redirect to prevent bouncing)
 app.get('/', (req, res) => {
-  res.redirect('/login.html');
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 // Client beacon to confirm JavaScript execution
