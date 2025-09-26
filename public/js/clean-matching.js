@@ -5,7 +5,7 @@
 
 import { db } from './firebase.js';
 import { 
-  doc, setDoc, getDoc, addDoc, collection, query, getDocs, serverTimestamp
+  doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /** Put a profile into the recycling bin */
@@ -48,16 +48,38 @@ export async function dislikeUser(myUid, targetUid) {
   await setDoc(viewRef, { from: myUid, to: targetUid, createdAt: serverTimestamp() });
 }
 
+/** Load recycled UIDs for a user */
+export async function loadRecycledUids(myUid) {
+  const q = query(
+    collection(db, "recycling"),
+    where("from", "==", myUid),
+    where("recycled", "==", false)
+  );
+  const snap = await getDocs(q);
+  const uids = new Set();
+  snap.forEach(doc => {
+    const data = doc.data();
+    if (data?.to) uids.add(data.to);
+  });
+  return uids;
+}
+
+/** Apply deck filters - exclude self and recycled profiles */
+export function applyDeckFilters(deck, selfUid, recycledUids = new Set()) {
+  return deck.filter(profile => profile.uid !== selfUid && !recycledUids.has(profile.uid));
+}
+
 /** Recycle back profiles */
 export async function recycleAll(myUid) {
-  const q = query(collection(db, "recycling"));
+  const q = query(
+    collection(db, "recycling"),
+    where("from", "==", myUid),
+    where("recycled", "==", false)
+  );
   const snap = await getDocs(q);
   const recycled = [];
   snap.forEach((docSnap) => {
-    const data = docSnap.data();
-    if (data.from === myUid && !data.recycled) {
-      recycled.push(data);
-    }
+    recycled.push(docSnap.data());
   });
 
   for (const item of recycled) {
@@ -66,4 +88,19 @@ export async function recycleAll(myUid) {
   }
 
   return recycled;
+}
+
+/** Send a chat message */
+export async function sendMessage(chatId, fromUid, text) {
+  try {
+    await addDoc(collection(db, "chats", chatId, "messages"), {
+      from: fromUid,
+      text: text,
+      createdAt: serverTimestamp()
+    });
+    console.log('💬 Message sent to chat:', chatId);
+  } catch (error) {
+    console.error('❌ Error sending message:', error);
+    throw error;
+  }
 }
