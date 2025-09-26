@@ -1,74 +1,94 @@
 rules_version = '2';
-
 service cloud.firestore {
-
   match /databases/{database}/documents {
 
-    /* ===== Security Helpers ===== */
-
-    function signedIn() { return request.auth != null; }
-
-    function isOwner(userId) { return signedIn() && request.auth.uid == userId; }
-
-    // Simple admin check - can be enhanced later if needed
-
+    // Helper Functions for Authentication
+    function signedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+    
     function isAdmin() {
-
-      return signedIn() && 
-
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true;
-
+      return signedIn() && request.auth.token.role in ['admin', 'superadmin'];
     }
-
-    // DEPRECATED: Old helper functions - kept for reference but should not be used
-
-    // function isAdmin() { 
-
-    //   return signedIn() && 
-
-    //   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true; 
-
-    // }
-
-    // function isWhitelisted() {
-
-    //   return signedIn() && exists(/databases/$(database)/documents/authorizedUsers/$(request.auth.uid));
-
-    // }
-
-    // Ensure a field is unchanged compared to existing doc
-
-    function fieldUnchanged(field) {
-
-      return (field in resource.data) &&
-
-             ( !(field in request.resource.data) ||
-
-               request.resource.data[field] == resource.data[field] );
-
-    }
-
-    // Accept either senderId or uid as the message author field
-
+    
     function reqMsgAuthor() {
-
-      return (request.resource.data.uid != null)
-
-             ? request.resource.data.uid
-
-             : request.resource.data.senderId;
-
+      return request.resource.data.author;
     }
-
+    
     function resMsgAuthor() {
-
-      return (resource.data.uid != null)
-
-             ? resource.data.uid
-
-             : resource.data.senderId;
-
+      return resource.data.author;
     }
+
+    // ==== USER PROFILES ====
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ==== LIKES ====
+    match /likes/{likeId} {
+      allow read: if request.auth != null;
+      allow create, delete: if request.auth != null && request.auth.uid == request.resource.data.from;
+    }
+
+    // ==== VIEWS ====
+    match /views/{viewId} {
+      allow read: if request.auth != null;
+      allow create, delete: if request.auth != null && request.auth.uid == request.resource.data.from;
+    }
+
+    // ==== MATCHES ====
+    match /matches/{matchId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.uids;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid in resource.data.uids;
+    }
+
+    // ==== PRIVATE CHATS ====
+    match /chats/{chatId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.uids;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid in resource.data.uids;
+      match /messages/{messageId} {
+        allow read: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.uids;
+        allow create: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.uids;
+        allow update, delete: if request.auth != null && (request.auth.uid == resource.data.from || request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.uids);
+      }
+    }
+
+    // ==== COMMUNITY ROOMS ====
+    match /rooms/{roomId} {
+      allow read: if request.auth != null;
+      allow update: if request.auth != null
+        && (request.resource.data.members hasOnly request.auth.uid
+            || request.auth.uid in resource.data.members);
+      allow create: if request.auth != null;
+      allow delete: if request.auth.token.role in ['admin','superadmin']; // only admins can delete rooms
+      match /messages/{messageId} {
+        allow create: if request.auth != null;
+        allow delete: if request.auth != null && request.auth.uid == resource.data.from;
+        allow read: if request.auth != null;
+      }
+    }
+
+    // ==== FAVORITES ====
+    match /favorites/{favId} {
+      allow create, delete: if request.auth != null && request.auth.uid == request.resource.data.from;
+      allow read: if request.auth != null;
+    }
+
+    // ==== CASUALTIES POSTS ====
+    match /casualties/{docId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.uploadedBy;
+    }
+  }
+}
 
     /* ===== Users (profiles) ===== */
 
@@ -761,6 +781,73 @@ service cloud.firestore {
 
       allow update, delete: if signedIn() && resource.data.uid == request.auth.uid;
 
+    }
+
+    /* ===== Arcade & Passport System ===== */
+
+    // Arcade points collection
+    match /arcade_points/{userId} {
+      allow read: if signedIn(); // Anyone can read points for leaderboards
+      allow create, update: if signedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if isAdmin(); // Only admins can delete points
+    }
+
+    // Passport stamps collection
+    match /passport_stamps/{stampId} {
+      allow read: if signedIn(); // Anyone can read stamps for stats
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+
+    // Passport travels collection  
+    match /passport_travels/{travelId} {
+      allow read: if signedIn(); // Anyone can read travels for stats
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+
+    // Passport encounters collection
+    match /passport_encounters/{encounterId} {
+      allow read: if signedIn(); // Anyone can read encounters for stats
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+
+    // Game rooms for arcade multiplayer
+    match /games/{gameId} {
+      allow read: if signedIn(); // Anyone can see game presence
+      allow create: if signedIn(); // Anyone can create game rooms
+      allow update: if signedIn(); // Users can join/leave games
+      allow delete: if isAdmin(); // Only admins can delete games
+    }
+
+    // Game invites system
+    match /invites/{inviteId} {
+      allow read: if signedIn() && (
+        resource.data.from == request.auth.uid || 
+        resource.data.to == request.auth.uid
+      );
+      allow create: if signedIn() && request.resource.data.from == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.from == request.auth.uid ||
+        resource.data.to == request.auth.uid
+      );
+      allow delete: if signedIn() && (
+        resource.data.from == request.auth.uid || 
+        isAdmin()
+      );
+    }
+
+    // Districts chat messages
+    match /districts_chats/{district}/messages/{messageId} {
+      allow read: if signedIn(); // Anyone can read district messages
+      allow create: if signedIn() && 
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.content is string &&
+        request.resource.data.content.size() >= 1 &&
+        request.resource.data.content.size() <= 1000;
+      allow update, delete: if signedIn() && 
+        (resource.data.uid == request.auth.uid || isAdmin());
     }
 
     /* ===== Districts System ===== */
