@@ -3,6 +3,23 @@ import { auth, db } from "/js/firebase.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+/* ---- PAGE GUARD: Only activate on profile.html ---- */
+const isProfilePage = location.pathname.split('/').pop()?.toLowerCase() === 'profile.html';
+console.log('🚪 Profile gate page check:', { 
+  currentPath: location.pathname,
+  isProfilePage,
+  filename: location.pathname.split('/').pop()
+});
+
+if (!isProfilePage) {
+  console.log('⏭️ Not on profile.html - profile gate disabled');
+  // Early exit for non-profile pages - no profile gate logic will run
+} else {
+  console.log('✅ On profile.html - profile gate active');
+  activateProfileGate();
+}
+
+function activateProfileGate() {
 /* ---- Profile completeness check ---- */
 function isComplete(d) {
   if (!d) return false;
@@ -351,13 +368,14 @@ function installBlockers() {
   
   window.addEventListener('hashchange', profileLockState.hashchangeHandler);
 
-  // Enhanced URL monitoring with faster detection
+  // SIMPLIFIED URL monitoring - reduced frequency to prevent bouncing
   const checkUrlChange = setInterval(() => {
     if (profileLockState.installed && profileLockState.lockedUrl) {
       const currentUrl = window.location.href;
       const lockedUrl = profileLockState.lockedUrl;
       
-      if (currentUrl !== lockedUrl) {
+      // Only redirect if NOT already on profile.html to prevent bounce loops
+      if (currentUrl !== lockedUrl && !currentUrl.includes('/profile.html')) {
         console.log('🚫 URL change detected - forcing return to profile page');
         const s = document.getElementById("profileLockStatus");
         if (s) s.textContent = "🚫 URL change blocked - complete your profile first!";
@@ -366,7 +384,7 @@ function installBlockers() {
         window.location.href = '/profile.html';
       }
     }
-  }, 50); // Check every 50ms for faster detection
+  }, 500); // Check every 500ms instead of 50ms to prevent bouncing
   
   profileLockState.urlCheckInterval = checkUrlChange;
 
@@ -795,6 +813,8 @@ immediatePageLoadCheck();
 
 // Export removeBlockers function globally for cancel button access
 window.removeBlockers = removeBlockers;
+
+} // End of activateProfileGate() function
 
 /* ---- Export necessary functions ---- */
 export { isComplete as isProfileComplete, checkProfileCompletion };
