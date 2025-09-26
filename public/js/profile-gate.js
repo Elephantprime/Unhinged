@@ -1,4 +1,4 @@
-// public/js/profile-lock.js
+// public/js/profile-gate.js
 import { auth, db } from "/js/firebase.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -663,7 +663,7 @@ async function immediatePageLoadCheck() {
   await checkProfileCompletion(user, 'PAGE_LOAD');
 }
 
-/* ---- Auth state change handler ---- */
+/* ---- Unified Auth state change handler ---- */
 onAuthStateChanged(auth, async (user) => {
   // Prevent multiple simultaneous auth state changes
   if (window.__authChangePending) {
@@ -672,145 +672,129 @@ onAuthStateChanged(auth, async (user) => {
   }
   window.__authChangePending = true;
   
-  // Don't auto-redirect from profile.html - let users manage their profile
-  if (window.location.pathname.includes('/profile.html')) {
-    console.log('🔒 [AUTH_CHANGE] User on profile page - allowing profile management');
-    window.__authChangePending = false;
-    return;
-  }
-  
-  // SIMPLIFIED: Just set the cookie for authenticated users, no automatic redirects
+  // Set login cookie for authenticated users
   if (user) {
-    // Set login cookie immediately for authenticated users with proper settings
     document.cookie = 'login_ok=1; path=/; max-age=86400; SameSite=Lax'; // 24 hours
-    console.log('🍪 Login cookie set for authenticated user:', user.uid.slice(0, 8));
-    
-    // Mark session without triggering redirects
     sessionStorage.setItem(`profile_visited_${user.uid}`, 'true');
-    console.log('✅ User authenticated and ready - manual navigation enabled');
+    console.log('🍪 Login cookie set for authenticated user:', user.uid.slice(0, 8));
   }
   
-  await checkProfileCompletion(user, 'AUTH_CHANGE');
-  window.__authChangePending = false;
-});
-
-/* ---- Export necessary functions ---- */
-export { isComplete as isProfileComplete, checkProfileCompletion };
-
-/* ---- Run immediate check to prevent race conditions ---- */
-// This is CRITICAL - it catches users who are already authenticated
-// when they directly navigate to protected pages
-immediatePageLoadCheck();
-
-// Special handling for profile page - install blockers to prevent bypass
-if (window.location.pathname.includes('/profile.html')) {
-  console.log('🔒 Profile page detected - installing completion blockers');
-  
-  // Wait for auth and then set up profile gating
-  onAuthStateChanged(auth, async (user) => {
+  // Handle profile page specifically
+  if (window.location.pathname.includes('/profile.html')) {
+    console.log('🔒 Profile page detected - setting up profile completion');
+    
     if (!user) {
       console.log('⚠️ No authenticated user - redirecting to login');
       window.location.href = '/login.html';
+      window.__authChangePending = false;
       return;
     }
     
-    // CRITICAL: Mark that user has visited profile page in this session
-    // This allows them to navigate to app.html and other protected pages
-    if (user?.uid) {
-      sessionStorage.setItem(`profile_visited_${user.uid}`, 'true');
-      // CRITICAL: Set server-enforceable login cookie immediately  
-      document.cookie = 'login_ok=1; path=/; max-age=86400; SameSite=Lax'; // 24 hours
-      console.log('🍪 Setting login cookie on profile page visit');
-      console.log('✅ Profile page visit marked for user:', user.uid.slice(0, 8));
-      console.log('🍪 Login cookie set for server authentication');
-    }
+    // Profile page specific logic
+    await handleProfilePageLogic(user);
+  } else {
+    // General page logic
+    await checkProfileCompletion(user, 'AUTH_CHANGE');
+  }
+  
+  window.__authChangePending = false;
+});
+
+/* ---- Profile page specific logic ---- */
+async function handleProfilePageLogic(user) {
+  try {
+    console.log('🔍 Checking Firebase profile for user:', user.uid);
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    const data = snap.data();
     
-    try {
-      console.log('🔍 Checking Firebase profile for user:', user.uid);
-      const snap = await getDoc(doc(db, 'users', user.uid));
-      const data = snap.data();
-      
-      console.log('📊 Firebase query results:', {
-        docExists: snap.exists(),
-        dataExists: !!data,
-        dataKeys: data ? Object.keys(data) : [],
-        userUID: user.uid
-      });
-      
-      // Check if user has an existing profile
-      if (!data || !snap.exists()) {
-        console.log('🆕 New user - complete profile creation required (no Firebase document found)');
-        // NEW USER: No profile exists, guide them through creation
-        const missingFields = getMissingFields(null);
-        ensureBanner(missingFields);
-        installBlockers();
-        bindSaveRecheck();
-        monitorProfileCompletion(user);
-        
-        // AUTO-OPEN EDIT MODAL for NEW users
-        console.log('🔧 Auto-opening edit modal for new user profile creation');
-        setTimeout(() => {
-          const editBtn = document.getElementById('editBtn');
-          if (editBtn) {
-            console.log('✅ Found Edit Profile button - clicking automatically for new user');
-            editBtn.click();
-            
-            setTimeout(() => {
-              if (window._pendingBannerFields) {
-                console.log('🔔 Modal opened for new user - creating banner inside modal');
-                createBannerInModal(window._pendingBannerFields);
-                ensureFileInputVisible();
-              }
-            }, 300);
-          }
-        }, 1000);
-        return;
-      }
-      
-      // EXISTING USER: Check if their profile is complete
-      if (isComplete(data)) {
-        console.log('✅ Existing user with complete profile - allowing normal navigation');
-        // Show brief success message
-        const hint = document.createElement("div");
-        hint.style.cssText = "position:sticky;top:0;background:#122116;color:#9fe6b6;border-bottom:1px solid #2b6141;padding:8px 12px;z-index:9998;font:600 14px system-ui";
-        hint.textContent = "✅ Welcome back! Your profile is complete.";
-        document.body.prepend(hint);
-        setTimeout(() => {
-          if (hint && hint.parentNode) hint.remove();
-        }, 3000);
-        return;
-      }
-      
-      // EXISTING USER with incomplete profile - guide them to complete it
-      console.log('⚠️ Existing user with incomplete profile - guiding to complete all required fields');
-      const missingFields = getMissingFields(data);
+    console.log('📊 Firebase query results:', {
+      docExists: snap.exists(),
+      dataExists: !!data,
+      dataKeys: data ? Object.keys(data) : [],
+      userUID: user.uid
+    });
+    
+    // Check if user has an existing profile
+    if (!data || !snap.exists()) {
+      console.log('🆕 New user - complete profile creation required (no Firebase document found)');
+      // NEW USER: No profile exists, guide them through creation
+      const missingFields = getMissingFields(null);
       ensureBanner(missingFields);
       installBlockers();
       bindSaveRecheck();
       monitorProfileCompletion(user);
       
-      console.log('🔧 Auto-opening edit modal for existing user to complete profile');
+      // AUTO-OPEN EDIT MODAL for NEW users
+      console.log('🔧 Auto-opening edit modal for new user profile creation');
       setTimeout(() => {
         const editBtn = document.getElementById('editBtn');
         if (editBtn) {
+          console.log('✅ Found Edit Profile button - clicking automatically for new user');
           editBtn.click();
+          
           setTimeout(() => {
             if (window._pendingBannerFields) {
+              console.log('🔔 Modal opened for new user - creating banner inside modal');
               createBannerInModal(window._pendingBannerFields);
               ensureFileInputVisible();
             }
           }, 300);
         }
       }, 1000);
-      
-    } catch (e) {
-      console.error('❌ Error checking profile completion on profile page:', e);
-      // On error, just show banner - no forced completion
-      ensureBanner(['Unable to verify profile data']);
-      console.log('✅ User can navigate freely despite error - profile completion optional');
+      return;
     }
-  });
+    
+    // EXISTING USER: Check if their profile is complete
+    if (isComplete(data)) {
+      console.log('✅ Existing user with complete profile - allowing normal navigation');
+      // Show brief success message
+      const hint = document.createElement("div");
+      hint.style.cssText = "position:sticky;top:0;background:#122116;color:#9fe6b6;border-bottom:1px solid #2b6141;padding:8px 12px;z-index:9998;font:600 14px system-ui";
+      hint.textContent = "✅ Welcome back! Your profile is complete.";
+      document.body.prepend(hint);
+      setTimeout(() => {
+        if (hint && hint.parentNode) hint.remove();
+      }, 3000);
+      return;
+    }
+    
+    // EXISTING USER with incomplete profile - guide them to complete it
+    console.log('⚠️ Existing user with incomplete profile - guiding to complete all required fields');
+    const missingFields = getMissingFields(data);
+    ensureBanner(missingFields);
+    installBlockers();
+    bindSaveRecheck();
+    monitorProfileCompletion(user);
+    
+    console.log('🔧 Auto-opening edit modal for existing user to complete profile');
+    setTimeout(() => {
+      const editBtn = document.getElementById('editBtn');
+      if (editBtn) {
+        editBtn.click();
+        setTimeout(() => {
+          if (window._pendingBannerFields) {
+            createBannerInModal(window._pendingBannerFields);
+            ensureFileInputVisible();
+          }
+        }, 300);
+      }
+    }, 1000);
+    
+  } catch (e) {
+    console.error('❌ Error checking profile completion on profile page:', e);
+    // On error, just show banner - no forced completion
+    ensureBanner(['Unable to verify profile data']);
+    console.log('✅ User can navigate freely despite error - profile completion optional');
+  }
 }
+
+/* ---- Run immediate check to prevent race conditions ---- */
+// This is CRITICAL - it catches users who are already authenticated
+// when they directly navigate to protected pages
+immediatePageLoadCheck();
 
 // Export removeBlockers function globally for cancel button access
 window.removeBlockers = removeBlockers;
+
+/* ---- Export necessary functions ---- */
+export { isComplete as isProfileComplete, checkProfileCompletion };
