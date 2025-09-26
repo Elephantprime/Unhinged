@@ -356,7 +356,7 @@
         await saveQuiz(pendingUserCred.user.uid, answers, flags);
 
         s.innerHTML = "<span class='ok'>Done! Redirecting to profile setup...</span>";
-        // NO AUTOMATIC REDIRECT - User can manually navigate to profile
+        window.location.href = "./edit-profile.html";
         console.log('✅ Account created successfully - user can manually navigate to profile');
       }catch(err){
         const msg = err?.message || "Signup failed.";
