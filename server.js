@@ -36,6 +36,8 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Firebase handles authentication client-side, no server redirects needed
+
 // Serve static files from public directory with AGGRESSIVE cache busting
 app.use(express.static('public', {
   setHeaders: (res, path, stat) => {
@@ -48,8 +50,10 @@ app.use(express.static('public', {
   }
 }));
 
-// CRITICAL FIX: Redirect root to profile.html for avatar contamination testing
-app.get('/', (req, res) => res.redirect(302, '/profile.html'));
+// Redirect root URL to login page
+app.get('/', (req, res) => {
+  res.redirect('/login.html');
+});
 
 // Client beacon to confirm JavaScript execution
 app.post('/__client-boot', (req, res) => {
@@ -144,9 +148,23 @@ app.use((req, res, next) => {
   }
 });
 
-// Catch all handler for SPA routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+// SPA routing only for non-file routes
+// Note: Static files (HTML, CSS, JS) are served by express.static middleware above
+// This catch-all only handles routes that don't correspond to actual files
+app.get('*', (req, res, next) => {
+  // Check if the requested path corresponds to an actual file in public directory
+  const filePath = path.join(__dirname, 'public', req.path);
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (!err) {
+      // File exists, let static middleware handle it
+      next();
+    } else {
+      // File doesn't exist, Firebase handles authentication client-side
+      
+      // Serve app.html for SPA routing
+      res.sendFile(path.join(__dirname, 'public', 'app.html'));
+    }
+  });
 });
 
 // Enhanced server startup with Replit-allowed port fallback
