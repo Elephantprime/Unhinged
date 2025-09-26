@@ -1,40 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Unhinged Lounge</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="world-nav.css">
   <link rel="stylesheet" href="lounge.css">
   <script src="../js/toast-notifications.js"></script>
   <script src="../js/photo-utils.js"></script>
   <script src="../js/avatar-utils.js?v=20250916"></script>
   <script type="module" src="lounge.js?v=20250916"></script>
   <script type="module" src="../js/admin-ui.js"></script>
+  <script type="module" src="../js/profile-modal.js"></script>
+  <script type="module" src="../js/universal-clickable-users.js"></script>
 </head>
 <body>
+  <div class="top-navigation">
+    <div class="nav-buttons">
+      <a href="../app.html" class="nav-btn">🏠 Community</a>
+      <a href="../profile.html" class="nav-btn">👤 Profile</a>
+      <a href="world.html" class="nav-btn">🌍 World</a>
+      <a href="feed.html" class="nav-btn">🏛️ Town Square</a>
+      <a href="lounge.html" class="nav-btn active">🍸 Lounge</a>
+      <a href="arcade.html" class="nav-btn">🎮 Arcade</a>
+      <a href="stages.html" class="nav-btn">🎤 Stages</a>
+      <a href="districts.html" class="nav-btn">🏙️ Districts</a>
+      <a href="passports.html" class="nav-btn">📔 Passports</a>
+      <a href="spotlight.html" class="nav-btn">💎 Spotlight</a>
+    </div>
+  </div>
+
   <div id="lounge-container">
-    <!-- Navigation Bar -->
-    <nav class="world-nav" style="background: linear-gradient(120deg, #1a1b22 90%, #0a0a13 100%); border-bottom: 2px solid #E11D2A; padding: 10px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-      <div class="nav-left" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-        <a href="world.html" class="btn" data-testid="button-back-world" style="background: linear-gradient(99deg, #2a2c39 40%, #E11D2A 100%); color: #fff;">← World Hub</a>
-        <a href="../app.html" class="btn" data-testid="button-community" style="background: linear-gradient(99deg, #E11D2A 40%, #ff6b00 100%); color: #fff;">🔥 Community</a>
-      </div>
-      <div class="nav-right" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-        <!-- Points Display -->
-        <div id="userPointsDisplay" class="btn points-display" data-testid="button-points" title="View leaderboard" style="background: linear-gradient(135deg, #ffd700, #ffb347); border-color: #ffd700; color: #000; font-weight: bold; cursor: pointer; display: none;">
-          🏆 <span id="userPointsCount">0</span> pts
-        </div>
-        <a href="../chaos.html" class="btn" data-testid="button-chaos" style="background: linear-gradient(99deg, #16161c 30%, #ff6b00 100%); color: #fff;">💔 Chaos Wall</a>
-        <a href="../profile.html" class="btn" data-testid="button-profile" style="background: linear-gradient(99deg, #16161c 50%, #e11d2a 100%); color: #fff;">👤 Profile</a>
-      </div>
-    </nav>
+    <header><h1>🔥 The Lounge</h1><p>Hang out, chat, and meet people in real time.</p></header>
 
-    <header>
-      <h1>🔥 The Unhinged Lounge</h1>
-      <p>Hang out, chat, and meet people in real time.</p>
-    </header>
-
-    <!-- Navigation Tabs -->
     <div class="tab-container">
       <button class="tab-btn active" data-tab="dating">💕 Dating Energy</button>
       <button class="tab-btn" data-tab="lounge">🍸 Lounge Vibes</button>
@@ -43,18 +41,15 @@
       <button class="tab-btn" data-tab="games">🎮 Games</button>
     </div>
 
-    <!-- Avatar Setup - Shared across all tabs -->
     <section id="avatar-setup">
       <h2>Choose Your Avatar</h2>
       <div class="current-avatar">
         <img id="current-avatar-display" src="https://i.pravatar.cc/80" alt="Your Avatar">
         <span id="current-user-name">Loading...</span>
       </div>
-      
       <div class="avatar-options">
         <button id="upload-avatar-btn" class="btn-primary">📁 Upload Custom Avatar</button>
         <input type="file" id="avatar-upload" accept="image/*" style="display:none;">
-        
         <p>Or choose a preset:</p>
         <div id="preset-avatars">
           <img src="https://i.pravatar.cc/80?img=1" class="preset">
@@ -64,182 +59,79 @@
           <img src="https://i.pravatar.cc/80?img=5" class="preset">
           <img src="https://i.pravatar.cc/80?img=6" class="preset">
         </div>
-        
-        <button id="save-avatar-btn" class="btn-success" style="margin-top: 10px;">💾 Save Avatar</button>
+        <button id="save-avatar-btn" class="btn-success" style="margin-top:10px;">💾 Save Avatar</button>
       </div>
     </section>
 
-    <!-- Dating Energy Tab -->
     <div id="dating-content" class="tab-content">
       <section id="dating-tables">
         <h2>💕 Dating Energy Tables</h2>
         <div class="table-grid">
-          <div class="table dating-table" data-table="love-seat">💖 The Love Seat</div>
-          <div class="table dating-table" data-table="thirst-trap">🔥 Thirst Trap</div>
-          <div class="table dating-table" data-table="situationship">😵‍💫 Situationship</div>
-          <div class="table dating-table" data-table="swipe-right">👉 Swipe Right</div>
-          <div class="table dating-table" data-table="first-date">🌹 First Date Table</div>
-          <div class="table dating-table" data-table="complicated">🤷‍♀️ It's Complicated</div>
+          <div class="table dating-table" onclick="window.location.href='love-seat.html'">💖 The Love Seat<div class="player-counter">👁️ <span id="love-seat-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table dating-table" onclick="window.location.href='thirst-trap.html'">🔥 Thirst Trap<div class="player-counter">👁️ <span id="thirst-trap-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table dating-table" onclick="window.location.href='situationship.html'">😵‍💫 Situationship<div class="player-counter">👁️ <span id="situationship-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table dating-table" onclick="window.location.href='swipe-right.html'">👉 Swipe Right<div class="player-counter">👁️ <span id="swipe-right-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table dating-table" onclick="window.location.href='first-date.html'">🌹 First Date Table<div class="player-counter">👁️ <span id="first-date-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table dating-table" onclick="window.location.href='complicated.html'">🤷‍♀️ Its Complicated<div class="player-counter">👁️ <span id="complicated-count">0</span></div><div class="table-caption">Empty table</div></div>
         </div>
       </section>
     </div>
 
-    <!-- Lounge Vibes Tab -->
     <div id="lounge-content" class="tab-content" style="display:none;">
       <section id="lounge-tables">
         <h2>🍸 Lounge / Nightlife Vibes</h2>
         <div class="table-grid">
-          <div class="table lounge-table" data-table="barstool">🍺 The Barstool</div>
-          <div class="table lounge-table" data-table="vip-booth">👑 VIP Booth</div>
-          <div class="table lounge-table" data-table="dance-floor">💃 The Dance Floor</div>
-          <div class="table lounge-table" data-table="champagne-corner">🥂 Champagne Corner</div>
-          <div class="table lounge-table" data-table="late-night">🌙 Late Night Confessions</div>
-          <div class="table lounge-table" data-table="candlelight">🕯️ Candlelight Table</div>
+          <div class="table lounge-table" onclick="window.location.href='barstool.html'">🍺 The Barstool<div class="player-counter">👁️ <span id="barstool-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table lounge-table" onclick="window.location.href='vip-booth.html'">👑 VIP Booth<div class="player-counter">👁️ <span id="vip-booth-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table lounge-table" onclick="window.location.href='dance-floor.html'">💃 The Dance Floor<div class="player-counter">👁️ <span id="dance-floor-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table lounge-table" onclick="window.location.href='champagne-corner.html'">🥂 Champagne Corner<div class="player-counter">👁️ <span id="champagne-corner-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table lounge-table" onclick="window.location.href='late-night.html'">🌙 Late Night Confessions<div class="player-counter">👁️ <span id="late-night-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table lounge-table" onclick="window.location.href='candlelight.html'">🕯️ Candlelight Table<div class="player-counter">👁️ <span id="candlelight-count">0</span></div><div class="table-caption">Empty table</div></div>
         </div>
       </section>
     </div>
 
-    <!-- Unhinged Tab -->
     <div id="unhinged-content" class="tab-content" style="display:none;">
       <section id="unhinged-tables">
         <h2>🤯 Unhinged / Chaotic Fun</h2>
         <div class="table-grid">
-          <div class="table unhinged-table" data-table="red-flag">🚩 The Red Flag Table</div>
-          <div class="table unhinged-table" data-table="ghosting-central">👻 Ghosting Central</div>
-          <div class="table unhinged-table" data-table="toxic-exes">☠️ Toxic Exes Anonymous</div>
-          <div class="table unhinged-table" data-table="gaslight-grill">💡 Gaslight Grill</div>
-          <div class="table unhinged-table" data-table="delulu-den">🤡 Delulu Den</div>
-          <div class="table unhinged-table" data-table="drama-table">🎭 The Drama Table</div>
+          <div class="table unhinged-table" onclick="window.location.href='red-flag.html'">🚩 The Red Flag Table<div class="player-counter">👁️ <span id="red-flag-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table unhinged-table" onclick="window.location.href='ghosting-central.html'">👻 Ghosting Central<div class="player-counter">👁️ <span id="ghosting-central-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table unhinged-table" onclick="window.location.href='toxic-exes.html'">☠️ Toxic Exes Anonymous<div class="player-counter">👁️ <span id="toxic-exes-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table unhinged-table" onclick="window.location.href='gaslight-grill.html'">💡 Gaslight Grill<div class="player-counter">👁️ <span id="gaslight-grill-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table unhinged-table" onclick="window.location.href='delulu-den.html'">🤡 Delulu Den<div class="player-counter">👁️ <span id="delulu-den-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table unhinged-table" onclick="window.location.href='drama-table.html'">🎭 The Drama Table<div class="player-counter">👁️ <span id="drama-table-count">0</span></div><div class="table-caption">Empty table</div></div>
         </div>
       </section>
     </div>
 
-    <!-- Icebreaker Tab -->
     <div id="icebreaker-content" class="tab-content" style="display:none;">
       <section id="icebreaker-tables">
         <h2>🎭 Icebreaker / Conversation Prompts</h2>
         <div class="table-grid">
-          <div class="table icebreaker-table" data-table="truth-dare">🎯 Truth or Dare Table</div>
-          <div class="table icebreaker-table" data-table="hot-take">🔥 Hot Take HQ</div>
-          <div class="table icebreaker-table" data-table="unpopular-opinions">🗣️ Unpopular Opinions</div>
-          <div class="table icebreaker-table" data-table="dealbreaker-diner">💔 Dealbreaker Diner</div>
-          <div class="table icebreaker-table" data-table="would-rather">🤔 Would You Rather Booth</div>
-          <div class="table icebreaker-table" data-table="storytime">📚 Storytime Spot</div>
+          <div class="table icebreaker-table" onclick="window.location.href='truth-dare.html'">🎯 Truth or Dare Table<div class="player-counter">👁️ <span id="truth-dare-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table icebreaker-table" onclick="window.location.href='hot-take.html'">🔥 Hot Take HQ<div class="player-counter">👁️ <span id="hot-take-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table icebreaker-table" onclick="window.location.href='unpopular-opinions.html'">🗣️ Unpopular Opinions<div class="player-counter">👁️ <span id="unpopular-opinions-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table icebreaker-table" onclick="window.location.href='dealbreaker-diner.html'">💔 Dealbreaker Diner<div class="player-counter">👁️ <span id="dealbreaker-diner-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table icebreaker-table" onclick="window.location.href='would-rather.html'">🤔 Would You Rather Booth<div class="player-counter">👁️ <span id="would-rather-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table icebreaker-table" onclick="window.location.href='storytime.html'">📚 Storytime Spot<div class="player-counter">👁️ <span id="storytime-count">0</span></div><div class="table-caption">Empty table</div></div>
         </div>
       </section>
     </div>
 
-    <!-- Single Unified Chat System -->
-    <section id="chat-section">
-      <!-- Chat Mode Switcher -->
-      <div class="chat-mode-switcher">
-        <button class="chat-mode-btn active" data-mode="global" data-testid="button-global-chat">🌍 Global Chat</button>
-        <button class="chat-mode-btn" data-mode="table" data-testid="button-table-chat">🪑 Table Chat</button>
-        <button class="chat-mode-btn" data-mode="whisper" data-testid="button-whisper-chat">💬 Whispers</button>
-      </div>
-      
-      <h2 id="chat-title">🌍 Global Lounge Chat</h2>
-      
-      <!-- Single Chat Display -->
-      <div id="chat-display" class="chat-display" data-testid="chat-display"></div>
-      
-      <!-- Single Chat Input -->
-      <div id="chat-input-container" class="chat-input-container">
-        <input type="text" id="chat-input" placeholder="Say something to everyone..." data-testid="input-chat">
-        <button id="send-btn" data-testid="button-send">Send</button>
-      </div>
-    </section>
-    
-    <!-- Online Users Section -->
-    <section id="online-users-section">
-      <h2>👥 Who's Online</h2>
-      <div id="online-users-list" data-testid="online-users-list">
-        <!-- Online users will be populated here -->
-      </div>
-    </section>
-
-    <!-- Spotlight - Shared -->
-    <section id="spotlight">
-      <h2>✨ Spotlight</h2>
-      <p id="spotlight-user">Waiting for first highlight...</p>
-      <div class="spotlight-stats">
-        <span class="stat-item" data-testid="text-total-online">👥 <span id="total-online">0</span> online</span>
-        <span class="stat-item" data-testid="text-total-tables">🪑 <span id="active-tables">0</span> active tables</span>
-      </div>
-    </section>
-
-    <!-- User List Modal -->
-    <div id="user-list-modal" class="user-list-modal">
-      <div class="user-list-content">
-        <div class="user-list-header">
-          <div class="user-list-title" id="user-list-title">Who's Here</div>
-          <button class="user-list-close" id="user-list-close">×</button>
-        </div>
-        <div id="user-list-container">
-          <!-- User list will be populated here -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Games Tab Content -->
     <div id="games-content" class="tab-content" style="display:none;">
-      <div class="games-list">
-        <a href="./games/this-or-that.html" class="game-link">
-          <span class="game-icon">🤔</span>
-          <div class="game-info">
-            <h3>This or That</h3>
-            <p>Quick decision games to break the ice</p>
-          </div>
-          <span class="game-arrow">→</span>
-        </a>
-        
-        <a href="./games/speed-dating.html" class="game-link">
-          <span class="game-icon">⚡</span>
-          <div class="game-info">
-            <h3>Speed Dating</h3>
-            <p>Rapid-fire conversation starters</p>
-          </div>
-          <span class="game-arrow">→</span>
-        </a>
-        
-        <a href="./games/red-flag-roulette.html" class="game-link">
-          <span class="game-icon">🎰</span>
-          <div class="game-info">
-            <h3>Red Flag Roulette</h3>
-            <p>Spin to reveal dating red flags</p>
-          </div>
-          <span class="game-arrow">→</span>
-        </a>
-        
-        <a href="./games/dealbreaker-dice.html" class="game-link">
-          <span class="game-icon">🎲</span>
-          <div class="game-info">
-            <h3>Deal Breaker Dice</h3>
-            <p>Roll the dice on relationship dealbreakers</p>
-          </div>
-          <span class="game-arrow">→</span>
-        </a>
-        
-        <a href="./games/conversation-starters.html" class="game-link">
-          <span class="game-icon">💬</span>
-          <div class="game-info">
-            <h3>Conversation Starters</h3>
-            <p>Thought-provoking questions to connect</p>
-          </div>
-          <span class="game-arrow">→</span>
-        </a>
-        
-        <a href="./games/would-you-still.html" class="game-link">
-          <span class="game-icon">💭</span>
-          <div class="game-info">
-            <h3>Would You Still...?</h3>
-            <p>Hypothetical dating scenarios</p>
-          </div>
-          <span class="game-arrow">→</span>
-        </a>
-      </div>
+      <section id="games-tables">
+        <h2>🎮 Game Tables</h2>
+        <div class="table-grid">
+          <div class="table games-table" onclick="window.location.href='this-or-that.html'">🤔 This or That<div class="player-counter">👁️ <span id="this-or-that-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table games-table" onclick="window.location.href='speed-dating.html'">⚡ Speed Dating<div class="player-counter">👁️ <span id="speed-dating-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table games-table" onclick="window.location.href='red-flag-roulette.html'">🎰 Red Flag Roulette<div class="player-counter">👁️ <span id="red-flag-roulette-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table games-table" onclick="window.location.href='dealbreaker-dice.html'">🎲 Dealbreaker Dice<div class="player-counter">👁️ <span id="dealbreaker-dice-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table games-table" onclick="window.location.href='conversation-starters.html'">💬 Conversation Starters<div class="player-counter">👁️ <span id="conversation-starters-count">0</span></div><div class="table-caption">Empty table</div></div>
+          <div class="table games-table" onclick="window.location.href='would-you-still.html'">💭 Would You Still...?<div class="player-counter">👁️ <span id="would-you-still-count">0</span></div><div class="table-caption">Empty table</div></div>
+        </div>
+      </section>
     </div>
   </div>
-
 </body>
 </html>
