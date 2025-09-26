@@ -6,56 +6,21 @@
   <title>Edit Profile - Unhinged</title>
   <link rel="stylesheet" href="/style.css">
   <style>
-    body {
-      background: var(--bg, #0e0e12);
-      color: #fff;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    .edit-container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: var(--panel, #15161b);
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    }
-    .form-group { margin-bottom: 20px; }
-    .form-group label { display: block; margin-bottom: 8px; color: var(--muted, #cfd0de); font-weight: 600; }
+    body { background:#0e0e12; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; padding:20px; }
+    .edit-container { max-width:600px; margin:0 auto; background:#15161b; padding:30px; border-radius:12px; }
+    h1 { text-align:center; margin-bottom:30px; }
+    .form-group { margin-bottom:20px; }
+    .form-group label { display:block; margin-bottom:8px; color:#cfd0de; font-weight:600; }
     .form-group input, .form-group textarea {
-      width: 100%; padding: 12px;
-      background: var(--bg, #0e0e12);
-      border: 1px solid #444;
-      border-radius: 8px;
-      color: #fff; font-size: 16px;
+      width:100%; padding:12px; background:#0e0e12; border:1px solid #444; border-radius:8px; color:#fff; font-size:16px;
     }
-    .form-group input:focus, .form-group textarea:focus {
-      outline: none; border-color: var(--red, #E11D2A);
-    }
-    .btn {
-      border: none; background: var(--red, #E11D2A); color: #fff;
-      padding: 12px 24px; border-radius: 8px;
-      cursor: pointer; font-size: 16px; font-weight: 600;
-      margin-right: 10px; transition: background 0.2s;
-    }
-    .btn:hover { background: #c41e2a; }
-    .btn.secondary { background: #3a3a3a; }
-    .btn.secondary:hover { background: #4a4a4a; }
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .thumb { cursor: pointer; border: 2px solid transparent; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
-    .thumb:hover { border-color: var(--red, #E11D2A); }
-    .thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .required { color: var(--red, #E11D2A); }
-    h1 { text-align: center; margin-bottom: 30px; color: #fff; }
-    .buttons { text-align: center; margin-top: 30px; }
-    .status { margin-top: 8px; font-size: .95rem; }
-    .ok { color:#9ae6b4; } .err{ color:#ff8e8e; } .prog{ color:#ffd27f; }
+    .btn { border:none; background:#E11D2A; color:#fff; padding:12px 24px; border-radius:8px; cursor:pointer; font-weight:600; margin:5px 0; }
+    .btn.secondary { background:#3a3a3a; }
+    .gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:10px; margin-top:10px; }
+    .thumb { border-radius:8px; overflow:hidden; }
+    .thumb img { width:100%; height:100px; object-fit:cover; display:block; }
+    .status { margin-top:8px; font-size:.9rem; }
+    .ok{color:#9ae6b4}.err{color:#ff8e8e}.prog{color:#ffd27f}
   </style>
 </head>
 <body>
@@ -63,43 +28,28 @@
     <h1>Complete Your Profile</h1>
 
     <div class="form-group">
-      <label for="displayName">Display Name <span class="required">*</span></label>
-      <input type="text" id="displayName" placeholder="Enter your display name">
+      <label for="displayName">Display Name *</label>
+      <input id="displayName" type="text" placeholder="Enter your name">
     </div>
 
     <div class="form-group">
-      <label for="age">Age <span class="required">*</span></label>
-      <input type="number" id="age" min="18" max="100" placeholder="Enter your age">
+      <label for="age">Age *</label>
+      <input id="age" type="number" min="18" max="100">
     </div>
 
     <div class="form-group">
-      <label for="location">State <span class="required">*</span></label>
-      <input type="text" id="location" placeholder="Enter your state (e.g. California)">
+      <label for="location">State *</label>
+      <input id="location" type="text" placeholder="Your state (e.g. California)">
     </div>
 
     <div class="form-group">
-      <label for="username">Username (Optional)</label>
-      <input type="text" id="username" placeholder="Enter a username">
+      <label for="bio">Bio (optional)</label>
+      <textarea id="bio" rows="3"></textarea>
     </div>
 
     <div class="form-group">
-      <label for="hobbies">Hobbies (Optional)</label>
-      <input type="text" id="hobbies" placeholder="What do you enjoy doing?">
-    </div>
-
-    <div class="form-group">
-      <label for="interests">Interests (Optional)</label>
-      <input type="text" id="interests" placeholder="What are you interested in?">
-    </div>
-
-    <div class="form-group">
-      <label for="bio">Bio (Optional)</label>
-      <textarea id="bio" rows="4" placeholder="Tell others about yourself..."></textarea>
-    </div>
-
-    <div class="form-group">
-      <label for="avatar">Photos <span class="required">*</span></label>
-      <input type="file" id="avatar" multiple accept="image/*">
+      <label for="avatar">Photos *</label>
+      <input id="avatar" type="file" multiple accept="image/*">
       <button id="uploadBtn" class="btn secondary" type="button">Upload Selected Photos</button>
       <div id="uploadStatus" class="status"></div>
       <div id="gallery" class="gallery"></div>
@@ -118,132 +68,72 @@
       sRef, uploadBytes, getDownloadURL, signOut
     } from "./js/firebase.js";
 
-    // Helper: validate the profile object
-    function isComplete(data) {
-      const hasName = !!(data?.displayName && String(data.displayName).trim());
-      const ageNum = Number(data?.age);
-      const hasAge = Number.isFinite(ageNum) && ageNum >= 18 && ageNum <= 100;
-      const hasState = !!(data?.location && String(data.location).trim());
-      const hasPhotos = Array.isArray(data?.photos) && data.photos.length > 0;
-      return hasName && hasAge && hasState && hasPhotos;
+    const gallery=document.getElementById("gallery");
+    const statusBox=document.getElementById("uploadStatus");
+
+    function isComplete(d){
+      return d?.displayName && d.age>=18 && d.age<=100 && d.location && Array.isArray(d.photos) && d.photos.length>0;
     }
+
+    async function loadPhotos(user){
+      gallery.innerHTML="";
+      const snap=await getDoc(doc(db,"users",user.uid));
+      if(snap.exists() && Array.isArray(snap.data().photos)){
+        snap.data().photos.forEach(url=>{
+          const t=document.createElement("div");
+          t.className="thumb";
+          t.innerHTML=`<img src="${url}">`;
+          gallery.appendChild(t);
+        });
+      }
+    }
+
+    // Upload photos
+    document.getElementById("uploadBtn").addEventListener("click",async()=>{
+      const user=auth.currentUser; if(!user) return;
+      const files=Array.from(document.getElementById("avatar").files||[]);
+      if(!files.length){statusBox.innerHTML="<span class='err'>Select photos first.</span>";return;}
+      const urls=[];
+      for(const f of files){
+        if(f.size>10*1024*1024){alert(`⚠️ ${f.name} is too large (max 10MB)`);continue;}
+        const name=`${Date.now()}_${f.name.replace(/\s+/g,"_")}`;
+        const ref=sRef(storage,`images/${user.uid}/${name}`);
+        await uploadBytes(ref,f);
+        urls.push(await getDownloadURL(ref));
+      }
+      if(urls.length){
+        const snap=await getDoc(doc(db,"users",user.uid));
+        const data=snap.exists()?snap.data():{};
+        const all=[...(data.photos||[]),...urls];
+        await setDoc(doc(db,"users",user.uid),{photos:all,hasPhotos:true,primaryPhoto:data.primaryPhoto||all[0],updatedAt:serverTimestamp()},{merge:true});
+        statusBox.innerHTML="<span class='ok'>✅ Uploaded successfully</span>";
+        loadPhotos(user);
+      }
+    });
+
+    // Save profile
+    document.getElementById("saveEdit").addEventListener("click",async()=>{
+      const user=auth.currentUser; if(!user)return;
+      const data={
+        displayName:document.getElementById("displayName").value.trim(),
+        age:Number(document.getElementById("age").value),
+        location:document.getElementById("location").value.trim(),
+        bio:document.getElementById("bio").value.trim()||null,
+        updatedAt:serverTimestamp()
+      };
+      const snap=await getDoc(doc(db,"users",user.uid));
+      const current=snap.exists()?snap.data():{};
+      const payload={...current,...data};
+      await setDoc(doc(db,"users",user.uid),payload,{merge:true});
+      if(!isComplete(payload)){alert("⚠️ Fill all required fields + upload at least one photo.");return;}
+      window.location.href="/profile.html";
+    });
 
     // Logout
-    document.getElementById("logoutBtn")?.addEventListener("click", async () => {
-      try { await signOut(auth); } catch {}
-      window.location.href = "/login.html";
-    });
+    document.getElementById("logoutBtn").addEventListener("click",async()=>{await signOut(auth);window.location.href="/login.html";});
 
-    // Upload selected photos immediately
-    const uploadBtn   = document.getElementById("uploadBtn");
-    const uploadInput = document.getElementById("avatar");
-    const statusBox   = document.getElementById("uploadStatus");
-    const gallery     = document.getElementById("gallery");
-
-    uploadBtn?.addEventListener("click", async () => {
-      const user = auth.currentUser;
-      if (!user) { statusBox.innerHTML = "<span class='err'>❌ Not logged in.</span>"; return; }
-
-      const files = Array.from(uploadInput.files || []);
-      if (!files.length) { statusBox.innerHTML = "<span class='err'>❌ Select photos first.</span>"; return; }
-
-      statusBox.innerHTML = "<span class='prog'>📤 Uploading…</span>";
-      const uploadedUrls = [];
-      try {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          if (file.size > 10 * 1024 * 1024) {
-            alert(`⚠️ ${file.name} is over 10MB. Skipped.`);
-            continue;
-          }
-          const filename = `${Date.now()}_${i}_${file.name.replace(/\s+/g, "_")}`;
-          const ref = sRef(storage, `images/${user.uid}/${filename}`);
-          await uploadBytes(ref, file);
-          const url = await getDownloadURL(ref);
-          uploadedUrls.push(url);
-
-          // Add thumbnail
-          const thumb = document.createElement("div");
-          thumb.className = "thumb";
-          thumb.innerHTML = `<img src="${url}" alt="photo">`;
-          gallery.appendChild(thumb);
-        }
-
-        if (uploadedUrls.length) {
-          // Merge into user doc
-          const snap = await getDoc(doc(db, "users", user.uid));
-          const data = snap.exists() ? snap.data() : {};
-          const existing = Array.isArray(data.photos) ? data.photos : [];
-          const allPhotos = existing.concat(uploadedUrls);
-
-          await setDoc(doc(db, "users", user.uid), {
-            photos: allPhotos,
-            hasPhotos: allPhotos.length > 0,
-            primaryPhoto: data.primaryPhoto || allPhotos[0],
-            updatedAt: serverTimestamp()
-          }, { merge: true });
-        }
-        statusBox.innerHTML = "<span class='ok'>✅ Uploaded successfully!</span>";
-      } catch (err) {
-        console.error("Upload error:", err);
-        statusBox.innerHTML = `<span class='err'>❌ Upload failed: ${err.message}</span>`;
-      }
-    });
-
-    // Save handler
-    async function saveProfile() {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      const displayName = document.getElementById("displayName")?.value?.trim() || "";
-      const age = Number(document.getElementById("age")?.value || 0);
-      const locationState = document.getElementById("location")?.value?.trim() || "";
-      const username = document.getElementById("username")?.value?.trim() || null;
-      const hobbies = document.getElementById("hobbies")?.value?.trim() || null;
-      const interests = document.getElementById("interests")?.value?.trim() || null;
-      const bio = document.getElementById("bio")?.value?.trim() || null;
-
-      if (!displayName || !Number.isFinite(age) || age < 18 || age > 100 || !locationState) {
-        alert("⚠️ Complete Display Name, Age (18–100), and State.");
-        return;
-      }
-
-      const snap = await getDoc(doc(db, "users", user.uid));
-      const data = snap.exists() ? snap.data() : {};
-      const photos = Array.isArray(data.photos) ? data.photos : [];
-      const primaryPhoto = data.primaryPhoto || photos[0] || null;
-
-      const payload = {
-        uid: user.uid,
-        displayName,
-        username: username || null,
-        age,
-        location: locationState,
-        hobbies: hobbies || null,
-        interests: interests || null,
-        bio: bio || null,
-        photos,
-        hasPhotos: photos.length > 0,
-        primaryPhoto,
-        updatedAt: serverTimestamp()
-      };
-
-      await setDoc(doc(db, "users", user.uid), payload, { merge: true });
-
-      const after = await getDoc(doc(db, "users", user.uid));
-      const afterData = after.exists() ? after.data() : {};
-      if (!isComplete(afterData)) {
-        alert("⚠️ Missing required fields or photo.");
-        return;
-      }
-      window.location.href = "/profile.html";
-    }
-    document.getElementById("saveEdit")?.addEventListener("click", saveProfile);
-
-    // Auth guard
-    onAuthStateChanged(auth, (u) => {
-      if (!u) window.location.href = "/login.html";
-    });
+    // Auth guard + auto-load
+    onAuthStateChanged(auth,u=>{if(!u)window.location.href="/login.html";else loadPhotos(u);});
   </script>
 </body>
 </html>
