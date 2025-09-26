@@ -254,10 +254,13 @@
         // Set server-enforceable login cookie
         document.cookie = 'login_ok=1; path=/; max-age=86400'; // 24 hours
         
-        show("ok", "Login successful! You can now manually navigate to your profile or app.");
+        show("ok", "Login successful! Redirecting to your profile...");
         
-        // NO AUTOMATIC REDIRECT - User chooses where to go
-        console.log('✅ Login successful - user can manually navigate to desired page');
+        // Redirect to profile page after successful login
+        console.log('✅ Login successful - redirecting to profile page');
+        setTimeout(() => {
+          window.location.href = '/profile.html';
+        }, 1000); // Short delay to show success message
       } catch (e) {
         show("err", errMap(e?.code));
       } finally {
