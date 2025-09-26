@@ -122,6 +122,13 @@
         }
       }
 
+      /* ===== SECTION: Container ===== */
+      .container {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
       /* ===== SECTION: Content Wrapper ===== */
       .content {
         flex: 1;
@@ -485,6 +492,52 @@
         grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
         gap: 10px;
         min-height: 160px;
+        max-height: 400px;
+        overflow-y: auto;
+        position: relative;
+        scroll-behavior: smooth;
+      }
+      
+      .scroll-container {
+        position: relative;
+      }
+      
+      .scroll-buttons {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        z-index: 10;
+      }
+      
+      .scroll-btn {
+        background: rgba(225, 29, 42, 0.9);
+        border: none;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+      
+      .scroll-btn:hover {
+        background: rgba(225, 29, 42, 1);
+        transform: scale(1.1);
+      }
+      
+      .scroll-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        transform: none;
       }
       .inbox-item {
         position: relative;
@@ -602,6 +655,7 @@
   </head>
   <body>
     <div class="wrap">
+    <div class="container">
 
     <div class="topbar">
       <div class="brand" id="topLine">Your Profile</div>
@@ -623,7 +677,7 @@
         </button>
         <button
           class="btn secondary"
-          id="recyclingBinBtn"
+          id="recycle-btn"
           type="button"
           title="♻️ Recycling Bin"
         >
@@ -822,7 +876,13 @@
           <button class="inbox-tab" data-tab="matches">Matches</button>
           <button class="inbox-tab" data-tab="messages">Messages</button>
         </div>
-        <div class="inbox-list" id="inboxList"></div>
+        <div class="scroll-container">
+          <div class="inbox-list" id="inboxList"></div>
+          <div class="scroll-buttons" id="inboxScrollButtons" style="display: none;">
+            <button class="scroll-btn" id="inboxScrollUp" title="Scroll Up">▲</button>
+            <button class="scroll-btn" id="inboxScrollDown" title="Scroll Down">▼</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -886,7 +946,13 @@
           </button>
         </div>
         <div id="recyclingBinCount" class="muted" style="margin-bottom: 16px;">Loading recycled profiles...</div>
-        <div id="recyclingBinList" class="inbox-list" style="min-height: 200px;"></div>
+        <div class="scroll-container">
+          <div id="recyclingBinList" class="inbox-list" style="min-height: 200px;"></div>
+          <div class="scroll-buttons" id="recyclingScrollButtons" style="display: none;">
+            <button class="scroll-btn" id="recyclingScrollUp" title="Scroll Up">▲</button>
+            <button class="scroll-btn" id="recyclingScrollDown" title="Scroll Down">▼</button>
+          </div>
+        </div>
         <div style="margin-top: 16px; text-align: center;">
           <button class="btn secondary" id="clearRecyclingBin" type="button">Clear All</button>
         </div>
@@ -908,32 +974,7 @@
         setPrimaryPhoto
       } from "./js/firebase.js";
 
-      // Simple RecyclingBin class inline
-      class RecyclingBin {
-        constructor() {
-          this.storageKey = 'unhinged_recycling_bin';
-        }
-        getProfiles() {
-          try {
-            return JSON.parse(localStorage.getItem(this.storageKey) || '[]');
-          } catch { return []; }
-        }
-        addProfile(profile) {
-          const profiles = this.getProfiles();
-          profiles.push({ ...profile, timestamp: Date.now() });
-          localStorage.setItem(this.storageKey, JSON.stringify(profiles));
-        }
-        removeProfile(uid) {
-          const profiles = this.getProfiles().filter(p => p.uid !== uid);
-          localStorage.setItem(this.storageKey, JSON.stringify(profiles));
-        }
-        clear() {
-          localStorage.removeItem(this.storageKey);
-        }
-        getCount() {
-          return this.getProfiles().length;
-        }
-      }
+      // Using imported RecyclingBin class from js/recycling-bin.js
       
       // Import additional Firebase functions from shared firebase.js
       import {
@@ -958,6 +999,15 @@
         uploadBytes,
         getDownloadURL
       } from "./js/firebase.js";
+
+      // Import modular matching system (removed conflicting functions)
+      import { 
+        recycleAll, 
+        likeUser as cleanLikeUser, 
+        dislikeUser as cleanDislikeUser 
+      } from './js/clean-matching.js';
+      import { wireCleanMatchingButtons } from './js/wire-clean-buttons.js';
+      import { RecyclingBin } from './js/recycling-bin.js';
 
       // ===== Global error traps so we can see what's blocking button wiring =====
       window.addEventListener("error", (e) => {
@@ -1078,6 +1128,7 @@
       const inboxBtn = document.getElementById('inboxBtn');
       const deleteBtn = document.getElementById('deleteBtn');
       const filterBtn = document.getElementById('filterBtn');
+      const casualtiesBtn = document.getElementById('casualtiesBtn');
 
       const cardFrame = document.getElementById('cardFrame');
       const mainPhoto = document.getElementById('main-photo');
@@ -1090,23 +1141,23 @@
 
       const passBtn = document.getElementById('pass-btn');
       const likeBtn = document.getElementById('like-btn');
-      const recyclingBinBtn = document.getElementById('recyclingBinBtn');
+      const recycleBtn = document.getElementById('recycle-btn');
       const browseBtn = document.getElementById('browseBtn');
 
       const passIndicator = document.getElementById('pass-indicator');
       const likeIndicator = document.getElementById('like-indicator');
 
-      const casualtiesBtn = document.getElementById('casualtiesBtn');
       const casualtiesModal = document.getElementById('casualtiesModal');
 
       /* ===== SECTION: State ===== */
       let currentUser = null;
       let allUsers = [];
       let seenUserIds = new Set();
-      let currentUserIndex = 0;
+      let currentIndex = 0;
       let activeFilters = { location: '', ageMin: null, ageMax: null };
       let recyclingBin = null;
       let isRecyclingMode = false;
+      let inRecycleMode = false;
       let recycledProfiles = [];
       let recycledIndex = 0;
 
@@ -1153,7 +1204,7 @@
 
         hideFilterModal();
         // Reset and reload with filters
-        currentUserIndex = 0;
+        currentIndex = 0;
         seenUserIds.clear();
         loadAndDisplayNextUser();
       }
@@ -1232,6 +1283,31 @@
         emptyEl.style.display = 'none';
       }
 
+      function recycleProfiles() {
+        console.log("♻️ Recycle clicked");
+        isRecyclingMode = true; // ✅ Set flag
+        showRecyclingBin();
+      }
+
+      function showCurrentProfile() {
+        if (allUsers.length === 0 || currentIndex >= allUsers.length) {
+          showEmpty();
+          return;
+        }
+        
+        const user = allUsers[currentIndex];
+        if (user) {
+          displayUser(user);
+        }
+      }
+
+      function nextProfile() {
+        if (inRecycleMode) return; // Lock prevents cycling
+        currentIndex++;
+        if (currentIndex >= allUsers.length) currentIndex = 0;
+        showCurrentProfile();
+      }
+
       async function loadAndDisplayNextUser() {
         try {
           // Check if we're in recycling mode
@@ -1250,12 +1326,12 @@
           const maxAttempts = allUsers.length * 2;
 
           while (!foundUser && attempts < maxAttempts) {
-            if (currentUserIndex >= allUsers.length) {
-              currentUserIndex = 0;
+            if (currentIndex >= allUsers.length) {
+              currentIndex = 0;
             }
 
-            const candidateUser = allUsers[currentUserIndex];
-            currentUserIndex++;
+            const candidateUser = allUsers[currentIndex];
+            currentIndex++;
             attempts++;
 
             if (!candidateUser || !candidateUser.uid) continue;
@@ -1806,18 +1882,12 @@
 
       function updateRecyclingBinButton() {
         if (!recyclingBin) return;
-        
         const count = recyclingBin.list().length;
-        const btn = document.getElementById('recyclingBinBtn');
-        
+        const btn = document.getElementById('recycle-btn'); // ✅ your actual button ID
         if (btn) {
           btn.textContent = count > 0 ? `♻️ Recycling Bin (${count})` : '♻️ Recycling Bin';
           btn.title = `View your recycled profiles (${count} available)`;
-          if (count > 0) {
-            btn.style.opacity = '1';
-          } else {
-            btn.style.opacity = '0.5';
-          }
+          btn.style.opacity = count > 0 ? '1' : '0.7';
         }
       }
 
@@ -1909,6 +1979,40 @@
           // Load first user to display
           await loadAndDisplayNextUser();
           
+          // Define window functions for modular matching system
+          window.passAction = async function() {
+            console.log("❌ Pass pressed");
+            const currentUserData = getCurrentDisplayedUser();
+            if (currentUserData && currentUser) {
+              // Use clean-matching.js function to write to recycling bin
+              await cleanDislikeUser(currentUser.uid, currentUserData.uid);
+              await passUser(); // Original UI update function
+            }
+          };
+
+          window.likeAction = async function() {
+            console.log("❤️ Like pressed");
+            const currentUserData = getCurrentDisplayedUser();
+            if (currentUserData && currentUser) {
+              // Use clean-matching.js function to write to recycling bin
+              await cleanLikeUser(currentUser.uid, currentUserData.uid);
+              await likeUser(); // Original UI update function
+            }
+          };
+
+          window.recycleAction = async function() {
+            console.log("♻️ Recycle pressed");
+            isRecyclingMode = true;
+            currentIndex = 0;
+            if (currentUser) {
+              await recycleAll(currentUser.uid);
+              await loadAndDisplayNextUser();
+            }
+          };
+
+          // Wire up the modular matching buttons
+          wireCleanMatchingButtons();
+          
         } else {
           console.log('🔒 No user authenticated');
           topLine.textContent = 'Please log in';
@@ -1925,12 +2029,40 @@
       // Action buttons
       passBtn?.addEventListener('click', passUser);
       likeBtn?.addEventListener('click', likeUser);
-      recyclingBinBtn?.addEventListener('click', showRecyclingBin);
+      recycleBtn?.addEventListener('click', recycleProfiles);
       
       // Navigation buttons
       editBtn?.addEventListener('click', showEditModal);
       inboxBtn?.addEventListener('click', showInbox);
       filterBtn?.addEventListener('click', showFilterModal);
+      
+      // Wire up myProfileBtn to show user's own public profile
+      myProfileBtn?.addEventListener('click', async () => {
+        if (!currentUser) return;
+        try {
+          const snap = await getDoc(doc(db, 'users', currentUser.uid));
+          if (snap.exists()) showPublicProfile(snap.data());
+        } catch (e) { console.error(e); }
+      });
+
+      // Chat send functionality
+      document.getElementById('chatSend')?.addEventListener('click', async () => {
+        const input = document.getElementById('chatInput');
+        const text = (input?.value || "").trim();
+        if (!text) return;
+        try {
+          const { sendChatMessage } = await import('./js/matching-chat-system.js');
+          await sendChatMessage(text);
+          input.value = "";
+        } catch (e) {
+          console.error('Chat send error:', e);
+        }
+      });
+
+      casualtiesBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        casualtiesModal.style.display = 'flex';
+      });
       
       // Modal close buttons
       document.getElementById('cancelEdit')?.addEventListener('click', hideEditModal);
@@ -2004,10 +2136,7 @@
         }
       });
 
-      // Casualties button functionality
-      casualtiesBtn?.addEventListener('click', () => {
-        casualtiesModal.style.display = 'flex';
-      });
+      // Removed duplicate casualties button handler
 
       document.getElementById('closeCasualties')?.addEventListener('click', () => {
         casualtiesModal.style.display = 'none';
@@ -2093,8 +2222,66 @@
         });
       });
 
+      // ===== Scroll Button Functionality =====
+      function setupScrollButtons(listId, upBtnId, downBtnId, buttonsId) {
+        const list = document.getElementById(listId);
+        const upBtn = document.getElementById(upBtnId);
+        const downBtn = document.getElementById(downBtnId);
+        const buttons = document.getElementById(buttonsId);
+        
+        if (!list || !upBtn || !downBtn || !buttons) return;
+        
+        // Check if scrolling is needed
+        function updateScrollButtons() {
+          const needsScroll = list.scrollHeight > list.clientHeight;
+          buttons.style.display = needsScroll ? 'flex' : 'none';
+          
+          if (needsScroll) {
+            // Update button states based on scroll position
+            upBtn.disabled = list.scrollTop <= 0;
+            downBtn.disabled = list.scrollTop >= (list.scrollHeight - list.clientHeight);
+          }
+        }
+        
+        // Scroll functions
+        function scrollUp() {
+          list.scrollBy({ top: -150, behavior: 'smooth' });
+        }
+        
+        function scrollDown() {
+          list.scrollBy({ top: 150, behavior: 'smooth' });
+        }
+        
+        // Event listeners
+        upBtn.addEventListener('click', scrollUp);
+        downBtn.addEventListener('click', scrollDown);
+        list.addEventListener('scroll', updateScrollButtons);
+        
+        // Observer to watch for content changes
+        const observer = new MutationObserver(updateScrollButtons);
+        observer.observe(list, { childList: true, subtree: true });
+        
+        // Initial check
+        updateScrollButtons();
+        
+        return { updateScrollButtons };
+      }
+      
+      // Initialize scroll buttons after DOM is ready
+      function initScrollButtons() {
+        // Setup recycling bin scroll buttons
+        setupScrollButtons('recyclingBinList', 'recyclingScrollUp', 'recyclingScrollDown', 'recyclingScrollButtons');
+        
+        // Setup inbox scroll buttons  
+        setupScrollButtons('inboxList', 'inboxScrollUp', 'inboxScrollDown', 'inboxScrollButtons');
+      }
+      
+      // Call initScrollButtons after page loads
+      document.addEventListener('DOMContentLoaded', initScrollButtons);
+      
       console.log('🔥 Unhinged Profile Matching System Loaded');
     </script>
     </div>
+    </div>
   </body>
-</html>
+      </html>
