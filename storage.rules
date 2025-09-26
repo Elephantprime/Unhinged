@@ -2,13 +2,19 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // ==== Helper Functions ====
+    /* ==== Helper Functions ==== */
     function signedIn() {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return signedIn() &&
+        exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
     function validImageType() {
-      return request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp)');
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp|heic|heif)');
     }
 
     function validMediaType() {
@@ -19,156 +25,95 @@ service firebase.storage {
       return request.resource.contentType.matches('(image|video|audio|text|application)/(.*)|.*');
     }
 
-    // ==== USER UPLOADS ====
-    match /images/{userId}/{allPaths=**} {
-      allow read: if signedIn() && request.auth.uid == userId;
-      allow write: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.size <= 10 * 1024 * 1024
-        && validMediaType();
+    /* ==== Profile Photos (Primary path) ==== */
+    match /profilePhotos/{userId}/{allPaths=**} {
+      allow read: if true; // 🔥 public read
+      allow write: if signedIn() &&
+        request.auth.uid == userId &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        validImageType();
       allow delete: if signedIn() && request.auth.uid == userId;
     }
 
-    // Legacy avatars
+    /* ==== User Images (extra gallery photos) ==== */
+    match /images/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if signedIn() &&
+        request.auth.uid == userId &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        validMediaType();
+      allow delete: if signedIn() && request.auth.uid == userId;
+    }
+
+    /* ==== Avatars (legacy) ==== */
     match /avatars/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.size <= 10 * 1024 * 1024
-        && validMediaType();
+      allow write: if signedIn() &&
+        request.auth.uid == userId &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        validMediaType();
       allow delete: if signedIn() && request.auth.uid == userId;
     }
 
-    // ==== PUBLIC CONTENT COLLECTIONS ====
+    /* ==== Public Content ==== */
     match /world_feed/{allPaths=**} {
       allow read: if true;
-      allow write: if signedIn()
-        && request.resource.size <= 10 * 1024 * 1024
-        && validMediaType();
+      allow write: if signedIn() &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        validMediaType();
     }
 
     match /casualties/{allPaths=**} {
       allow read: if true;
-      allow write: if signedIn()
-        && request.resource.size <= 10 * 1024 * 1024
-        && validMediaType();
+      allow write: if signedIn() &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        validMediaType();
     }
 
     match /live_streams/{streamerUid}/{allPaths=**} {
       allow read: if true;
-      allow write: if signedIn()
-        && request.auth.uid == streamerUid
-        && request.resource.size <= 50 * 1024 * 1024
-        && validMediaType();
+      allow write: if signedIn() &&
+        request.auth.uid == streamerUid &&
+        request.resource.size <= 50 * 1024 * 1024 &&
+        validMediaType();
     }
 
     match /spotlight/{allPaths=**} {
       allow read: if true;
-      allow write: if signedIn()
-        && request.resource.size <= 10 * 1024 * 1024
-        && validImageType();
+      allow write: if signedIn() &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        validImageType();
     }
 
-    // ==== DISTRICT CONTENT ====
+    /* ==== Lounge / Districts ==== */
+    match /lounge_media/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if signedIn() &&
+        request.auth.uid == userId &&
+        request.resource.size <= 5 * 1024 * 1024 &&
+        validImageType();
+    }
+
     match /districts/{district}/{allPaths=**} {
       allow read: if true;
-      allow write: if signedIn()
-        && request.resource.size <= 10 * 1024 * 1024
-        && validMediaType();
+      allow write: if signedIn() &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        validMediaType();
     }
 
     match /anonymous/{allPaths=**} {
       allow read: if true;
-      allow write: if signedIn()
-        && request.resource.size <= 5 * 1024 * 1024
-        && validImageType();
+      allow write: if signedIn() &&
+        request.resource.size <= 5 * 1024 * 1024 &&
+        validImageType();
     }
 
-    // ==== STAGES SYSTEM MEDIA ====
-    match /stages_events/{eventId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if signedIn()
-        && request.resource.size <= 10 * 1024 * 1024
-        && validMediaType();
-    }
-
-    match /stages_assets/{allPaths=**} {
-      allow read: if true;
-      allow write: if false; // Only allow by default, can't check admin
-    }
-
-    // ==== ARCADE SYSTEM MEDIA ====
-    match /arcade_memes/{allPaths=**} {
-      allow read: if true;
-      allow write: if signedIn()
-        && request.resource.size <= 5 * 1024 * 1024
-        && validImageType();
-    }
-
-    match /arcade_assets/{allPaths=**} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    // ==== LOUNGE SYSTEM MEDIA ====
-    match /lounge_assets/{allPaths=**} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /lounge_media/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.size <= 5 * 1024 * 1024
-        && validImageType();
-    }
-
-    // ==== CHAT AND MESSAGE MEDIA ====
-    match /chat_media/{roomId}/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.size <= 10 * 1024 * 1024
-        && validMediaType();
-    }
-
-    match /private_media/{chatId}/{userId}/{allPaths=**} {
-      allow read: if signedIn() && request.auth.uid == userId;
-      allow write: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.size <= 10 * 1024 * 1024
-        && validMediaType();
-    }
-
-    // ==== MODERATION AND ADMIN CONTENT ====
-    match /moderation/{allPaths=**} {
-      allow read: if false;
-      allow write: if false;
-    }
-
-    match /system/{allPaths=**} {
-      allow read: if false;
-      allow write: if false;
-    }
-
-    // ==== APP ASSETS AND RESOURCES ====
-    match /app_assets/{allPaths=**} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /themes/{allPaths=**} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    // ==== TEMPORARY AND CACHE STORAGE ====
+    /* ==== Other ==== */
     match /temp/{userId}/{allPaths=**} {
-      allow read, write: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.size <= 50 * 1024 * 1024
-        && validDocumentType();
+      allow read, write: if signedIn() &&
+        request.auth.uid == userId &&
+        request.resource.size <= 50 * 1024 * 1024 &&
+        validDocumentType();
     }
 
     match /cache/{allPaths=**} {
@@ -176,22 +121,9 @@ service firebase.storage {
       allow write: if false;
     }
 
-    // ==== ANALYTICS AND REPORTING MEDIA ====
-    match /analytics/{allPaths=**} {
-      allow read: if false;
-      allow write: if false;
-    }
-
-    // ==== BACKUP AND EXPORT STORAGE ====
-    match /backups/{userId}/{allPaths=**} {
-      allow read: if signedIn() && request.auth.uid == userId;
-      allow write: if false;
-    }
-
-    // ==== SECURE DEFAULT - ADMIN-ONLY FALLBACK ====
+    /* ==== Default Fallback ==== */
     match /{allPaths=**} {
-      allow read: if false;
-      allow write: if false;
+      allow read, write: if false;
     }
   }
 }
