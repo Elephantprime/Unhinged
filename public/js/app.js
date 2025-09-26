@@ -1,6 +1,7 @@
 import { auth, db, getUserDoc, waitForAuth } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, limit, getDoc, doc, setDoc, deleteDoc, where, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { makeUserClickable, makeCounterClickable, showMembersList, autoMakeUsersClickable } from './universal-clickable-users.js';
 import { safeSendSignal, serializeOffer, serializeAnswer, serializeIceCandidate } from "./signaling-debug.js";
 import { applyDeckFilters, wirePassLike } from "/js/deck-filters.js";
 import { recyclingBin } from "/js/recycling-bin.js";
@@ -225,9 +226,27 @@ function setupEventListeners() {
       console.error('sendLiveStreamMessage not available');
     }
   }, 'live chat send button');
-  safeAddEventListener(minimizeChatBtn, 'click', minimizeLiveStreamChat, 'minimize chat button');
-  safeAddEventListener(closeChatBtn, 'click', closeLiveStreamChat, 'close chat button');
-  safeAddEventListener(maximizeChatBtn, 'click', maximizeLiveStreamChat, 'maximize chat button');
+  safeAddEventListener(minimizeChatBtn, 'click', () => {
+    if (typeof minimizeLiveStreamChat === 'function') {
+      minimizeLiveStreamChat();
+    } else {
+      console.error('minimizeLiveStreamChat not available');
+    }
+  }, 'minimize chat button');
+  safeAddEventListener(closeChatBtn, 'click', () => {
+    if (typeof closeLiveStreamChat === 'function') {
+      closeLiveStreamChat();
+    } else {
+      console.error('closeLiveStreamChat not available');
+    }
+  }, 'close chat button');
+  safeAddEventListener(maximizeChatBtn, 'click', () => {
+    if (typeof maximizeLiveStreamChat === 'function') {
+      maximizeLiveStreamChat();
+    } else {
+      console.error('maximizeLiveStreamChat not available');
+    }
+  }, 'maximize chat button');
   
   // Enter key listeners
   safeAddEventListener(chatInput, 'keydown', (e) => {
@@ -4797,186 +4816,108 @@ window.showRecyclingBin = showRecyclingBin;
 window.restoreFromRecyclingBin = restoreFromRecyclingBin;
 window.initializeRecyclingBin = initializeRecyclingBin;
 
-/* ===== DROP-IN: Full Profile Modal (gallery + details) ===== */
-function showPublicProfile(user) {
-  // guard + normalize
-  const u = user || {};
-  const photos = [];
-  if (Array.isArray(u.photos) && u.photos.length > 0) {
-    photos.push(...u.photos);
-  } else if (u.photoURL) {
-    photos.push(u.photoURL);
-  }
-  // NO FALLBACKS - if no photos, modal will show "No Photos Available"
+/**
+ * Show a profile modal with Like ❤️ and Favorite ⭐
+ * Handles mutual likes → creates Match.
+ */
+async function showPublicProfile(user) {
+  const { 
+    db, auth,
+    doc, setDoc, getDoc, serverTimestamp 
+  } = window;
 
-  // remove any existing modal
-  document.querySelectorAll('.profile-modal-backdrop').forEach(el => el.remove());
+  const modal = document.createElement("div");
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.background = "rgba(0,0,0,0.65)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.zIndex = "9999";
 
-  // backdrop
-  const backdrop = document.createElement('div');
-  backdrop.className = 'profile-modal-backdrop';
-  backdrop.style.cssText = `
-    position:fixed; inset:0; background:rgba(0,0,0,.8);
-    display:flex; align-items:center; justify-content:center; z-index:10000; padding:12px;
-    backdrop-filter: blur(4px);
-  `;
+  const card = document.createElement("div");
+  card.style.background = "var(--panel)";
+  card.style.color = "#fff";
+  card.style.padding = "1rem";
+  card.style.borderRadius = "12px";
+  card.style.maxWidth = "420px";
+  card.style.width = "100%";
 
-  // modal card
-  const card = document.createElement('div');
-  card.style.cssText = `
-    width:100%; max-width:720px; max-height:92vh; overflow:auto;
-    background:linear-gradient(145deg,#171821 0%,#1f2030 100%);
-    color:#fff; border-radius:16px; border:1px solid #2a2a2a; box-shadow:0 12px 40px rgba(0,0,0,.5);
-  `;
+  const name = user.displayName || "Member";
+  const username = user.username ? `@${user.username}` : "";
+  const ageText = user.age ? `${user.age} yrs` : "";
+  const location = user.location || "";
+  const photo = user.primaryPhoto || (Array.isArray(user.photos) && user.photos[0]) || "/assets/default.png";
 
-  // header (name + close)
-  const name = u.displayName || 'Member';
-  const username = u.username ? `@${u.username}` : '';
-  const ageText = Number.isFinite(+u.age) ? `${u.age}` : '';
-  const loc = u.location || '';
+  card.innerHTML = `
+    <img src="${photo}" style="width:100%;max-height:280px;object-fit:cover;border-radius:8px;margin-bottom:12px">
+    <h2>${name}</h2>
+    ${username ? `<div style="font-size:.9em;color:#aaa">${username}</div>` : ""}
+    ${ageText || location ? `<div style="font-size:.9em;color:#aaa">${[ageText, location].filter(Boolean).join(" • ")}</div>` : ""}
 
-  // main image + controls
-  let index = 0;
-  const header = `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #2a2a2a;">
-      <div style="display:flex;flex-direction:column;gap:2px;">
-        <div style="font-size:1.3rem;font-weight:800">${name}${ageText?`, <span style="font-weight:600;opacity:.9">${ageText}</span>`:''}</div>
-        <div style="opacity:.8">${[username, loc].filter(Boolean).join(' • ')}</div>
-      </div>
-      <button id="pm-close" class="btn secondary" style="padding:.4rem .8rem;">Close</button>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:center">
+      <button class="btn small like-btn">❤️ Like</button>
+      <button class="btn small fav-btn">⭐ Favorite</button>
+      <button class="btn small secondary close-btn">Close</button>
     </div>
   `;
 
-  const media = `
-    <div style="position:relative">
-      <img id="pm-photo" data-src="${photos[0]}" alt="photo" style="width:100%;max-height:60vh;object-fit:cover;display:block;">
-      <button id="pm-prev" class="btn pill small" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.9">‹</button>
-      <button id="pm-next" class="btn pill small" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);opacity:.9">›</button>
-      <div id="pm-dots" style="position:absolute;left:12px;right:12px;bottom:10px;display:flex;gap:6px;justify-content:center;"></div>
-    </div>
-  `;
+  modal.appendChild(card);
+  document.body.appendChild(modal);
 
-  const thumbs = `
-    <div id="pm-thumbs" style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;">
-      ${photos.map((p,i)=>`
-        <img data-i="${i}" data-src="${p}" style="width:74px;height:74px;object-fit:cover;border-radius:8px;border:${i===0?'2px solid #E11D2A':'2px solid transparent'};background:#0b0b0f;cursor:pointer;">
-      `).join('')}
-    </div>
-  `;
+  // Close
+  card.querySelector(".close-btn").addEventListener("click", () => document.body.removeChild(modal));
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) document.body.removeChild(modal);
+  });
 
-  const details = `
-    <div style="padding:8px 12px 16px 12px; display:grid; gap:10px;">
-      ${u.bio ? `<div style="background:#12131a;border:1px solid #2a2a2a;border-radius:10px;padding:10px;">
-        <div style="font-weight:700;margin-bottom:6px;">About</div>
-        <div style="opacity:.95;line-height:1.4">${u.bio}</div>
-      </div>`:''}
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
-        ${u.hobbies ? `<div style="background:#12131a;border:1px solid #2a2a2a;border-radius:10px;padding:10px;">
-          <div style="font-weight:700;margin-bottom:6px;">Hobbies</div>
-          <div style="opacity:.95">${u.hobbies}</div>
-        </div>`:''}
-        ${u.interests ? `<div style="background:#12131a;border:1px solid #2a2a2a;border-radius:10px;padding:10px;">
-          <div style="font-weight:700;margin-bottom:6px;">Interests</div>
-          <div style="opacity:.95">${u.interests}</div>
-        </div>`:''}
-        ${u.gender ? `<div style="background:#12131a;border:1px solid #2a2a2a;border-radius:10px;padding:10px;">
-          <div style="font-weight:700;margin-bottom:6px;">Gender</div>
-          <div style="opacity:.95">${u.gender}</div>
-        </div>`:''}
-      </div>
-      ${(Array.isArray(u.flags) && u.flags.length) ? `
-        <div style="background:#12131a;border:1px solid #2a2a2a;border-radius:10px;padding:10px;">
-          <div style="font-weight:700;margin-bottom:6px;">Red Flags (self-reported)</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            ${u.flags.map(f=>`<span class="flag-pill" style="border:1px solid #3a3b44;border-radius:999px;padding:2px 8px;background:#14151a">${f}</span>`).join('')}
-          </div>
-        </div>
-      `:''}
-    </div>
-  `;
+  // Like ❤️
+  const likeBtn = card.querySelector(".like-btn");
+  likeBtn.addEventListener("click", async () => {
+    const from = auth.currentUser?.uid;
+    const to = user.uid;
+    if (!from || !to) return;
 
-  card.innerHTML = header + media + thumbs + details;
-  backdrop.appendChild(card);
-  document.body.appendChild(backdrop);
+    likeBtn.disabled = true;
 
-  // wiring
-  const imgEl = card.querySelector('#pm-photo');
-  const prevBtn = card.querySelector('#pm-prev');
-  const nextBtn = card.querySelector('#pm-next');
-  const dotsEl = card.querySelector('#pm-dots');
-  const closeBtn = card.querySelector('#pm-close');
-  const thumbsEl = card.querySelector('#pm-thumbs');
+    await setDoc(doc(db, "likes", `${from}_${to}`), {
+      from, to, createdAt: serverTimestamp()
+    });
 
-  function renderDots() {
-    dotsEl.innerHTML = photos.map((_,i)=>`
-      <div style="
-        width:28px;height:3px;border-radius:2px;
-        background:${i===index ? '#fff':'#ffffff44'};
-        transition:background .15s
-      "></div>`).join('');
-  }
-  function setIndex(i) {
-    index = (i+photos.length)%photos.length;
-    
-    // NO FALLBACKS - only show real photos
-    if (photos[index]) {
-      imgEl.src = photos[index];
-    } else {
-      imgEl.style.display = 'none';
+    // Check for mutual like
+    const reciprocal = await getDoc(doc(db, "likes", `${to}_${from}`));
+    if (reciprocal.exists()) {
+      // Sorted ID
+      const matchId = [from, to].sort().join("_");
+      await setDoc(doc(db, "matches", matchId), {
+        uids: [from, to],
+        createdAt: serverTimestamp()
+      });
+      alert(`🎉 It's a match with ${name}!`);
     }
-    
-    renderDots();
-    // highlight thumb
-    thumbsEl.querySelectorAll('img').forEach((t,j)=>{
-      t.style.border = (j===index) ? '2px solid #E11D2A' : '2px solid transparent';
+  });
+
+  // Favorite ⭐
+  const favBtn = card.querySelector(".fav-btn");
+  favBtn.addEventListener("click", async () => {
+    const from = auth.currentUser?.uid;
+    const to = user.uid;
+    if (!from || !to) return;
+
+    await setDoc(doc(db, "favorites", `${from}_${to}`), {
+      from, to, createdAt: serverTimestamp()
     });
-  }
-  prevBtn.onclick = ()=> setIndex(index-1);
-  nextBtn.onclick = ()=> setIndex(index+1);
-  closeBtn.onclick = ()=> backdrop.remove();
-  dotsEl.onclick = ()=>{}; // (click-through protection)
 
-  thumbsEl.addEventListener('click', (e)=>{
-    const t = e.target.closest('img[data-i]');
-    if (t) setIndex(+t.dataset.i);
+    alert(`⭐ You favorited ${name}`);
   });
-
-  // keyboard nav
-  const onKey = (e)=>{
-    if (e.key === 'Escape') backdrop.remove();
-    if (e.key === 'ArrowLeft') setIndex(index-1);
-    if (e.key === 'ArrowRight') setIndex(index+1);
-  };
-  document.addEventListener('keydown', onKey, { once:false });
-  backdrop.addEventListener('click', (e)=>{
-    if (e.target === backdrop) backdrop.remove();
-  });
-  // cleanup when removed
-  const obs = new MutationObserver(()=>{
-    if (!document.body.contains(backdrop)) document.removeEventListener('keydown', onKey);
-  });
-  obs.observe(document.body,{childList:true});
-
-  // Load thumbnails safely with PhotoUtils
-  if (window.PhotoUtils?.loadImageWithFallback) {
-    thumbsEl.querySelectorAll('img[data-src]').forEach(thumb => {
-      const photoUrl = thumb.getAttribute('data-src');
-      window.PhotoUtils.loadImageWithFallback(thumb, photoUrl, 'thumbnail');
-    });
-  }
-  
-  // Load main photo with PhotoUtils
-  if (window.PhotoUtils?.loadImageWithFallback) {
-    window.PhotoUtils.loadImageWithFallback(imgEl, photos[0], 'profile');
-  }
-  
-  // initial
-  renderDots();
-  setIndex(index);
 }
 
 // expose if you want to call it elsewhere
 window.showPublicProfile = showPublicProfile;
+
+// Initialize clickable users system for app
+console.log('🖱️ Initializing clickable users in app.js');
+autoMakeUsersClickable();
 
 function showEmptyState() {
   const cardFrame = document.getElementById('cardFrame');
