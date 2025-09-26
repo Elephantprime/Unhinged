@@ -458,8 +458,8 @@ async function uploadUserPhoto(uid, file, onProgress = null) {
     const randomId = Math.random().toString(36).slice(2);
     const fileName = `${timestamp}-${randomId}.${extension}`;
     
-    // Use guaranteed-allowed path: images/{uid}/profile/filename.ext
-    const path = `images/${uid}/profile/${fileName}`;
+    // Use guaranteed-allowed path: profilePhotos/{uid}/filename.ext (public read access)
+    const path = `profilePhotos/${uid}/${fileName}`;
     console.log('📤 Uploading to path:', path, 'Content-Type:', contentType);
     
     const ref = sRef(storage, path);
@@ -1024,6 +1024,40 @@ async function clearRoomChat(roomId) {
   }
 }
 
+// Delete entire room (messages + room document)
+async function deleteRoom(roomId) {
+  if (!await isCurrentUserAdmin()) {
+    throw new Error('Unauthorized: Admin access required');
+  }
+
+  try {
+    console.log(`🗑️ Deleting room ${roomId}...`);
+    
+    // Delete all messages in room subcollection first
+    const messagesRef = collection(db, 'rooms', roomId, 'messages');
+    const messagesSnapshot = await getDocs(messagesRef);
+    
+    console.log(`🗑️ Found ${messagesSnapshot.size} messages to delete`);
+    
+    const deletePromises = messagesSnapshot.docs.map(async (doc) => {
+      return deleteDoc(doc.ref);
+    });
+    
+    // Wait for all messages to be deleted
+    await Promise.all(deletePromises);
+    console.log(`🗑️ Deleted ${deletePromises.length} messages`);
+    
+    // Then delete the room document itself
+    await deleteDoc(doc(db, 'rooms', roomId));
+    console.log(`🗑️ Room ${roomId} fully deleted`);
+    
+    return true;
+  } catch (error) {
+    console.error(`❌ Error deleting room ${roomId}:`, error);
+    throw error;
+  }
+}
+
 // Clear individual table chat in lounge
 async function clearTableChat(tableId) {
   if (!await isCurrentUserAdmin()) {
@@ -1165,6 +1199,193 @@ window.testProfileGate = async function() {
 };
 
 // =====================================================
+// Achievement and Passport System Functions
+// =====================================================
+
+// Log an achievement and add points to user
+async function logAchievement(uid, type, targetUid = null, points = 5) {
+  if (!uid || !type) {
+    console.error('❌ logAchievement: Missing required parameters');
+    return false;
+  }
+  
+  try {
+    // Add achievement to history
+    await addDoc(collection(db, "achievements", uid, "history"), {
+      type,
+      target: targetUid,
+      points,
+      createdAt: serverTimestamp()
+    });
+    
+    // Update user's total points
+    await updateDoc(doc(db, "users", uid), {
+      points: increment(points)
+    });
+    
+    console.log(`🏆 Achievement logged: ${type} (+${points} points) for user ${uid}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error logging achievement:', error);
+    return false;
+  }
+}
+
+// Update passport progress
+async function updatePassport(uid, field, value) {
+  if (!uid || !field) {
+    console.error('❌ updatePassport: Missing required parameters');
+    return false;
+  }
+  
+  try {
+    const ref = doc(db, "passport", uid);
+    
+    if (Array.isArray(value)) {
+      // Add to array (like roomsJoined)
+      await updateDoc(ref, { [field]: arrayUnion(...value) });
+    } else if (typeof value === "number") {
+      // Increment number (like likesGiven, matchesMade)
+      await updateDoc(ref, { [field]: increment(value) });
+    } else {
+      // Set value directly
+      await updateDoc(ref, { [field]: value });
+    }
+    
+    console.log(`🎫 Passport updated: ${field} for user ${uid}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error updating passport:', error);
+    return false;
+  }
+}
+
+// Grant a badge to a user
+async function grantBadge(uid, name, icon) {
+  if (!uid || !name || !icon) {
+    console.error('❌ grantBadge: Missing required parameters');
+    return false;
+  }
+  
+  try {
+    await updateDoc(doc(db, "users", uid), {
+      badges: arrayUnion({ name, icon })
+    });
+    
+    console.log(`🎖️ Badge granted: ${name} to user ${uid}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error granting badge:', error);
+    return false;
+  }
+}
+
+// Give a red flag (must be matched/friend first)
+async function giveRedFlag(targetUid, fromUid, text, level = "yellow") {
+  if (!targetUid || !fromUid || !text) {
+    console.error('❌ giveRedFlag: Missing required parameters');
+    return false;
+  }
+  
+  try {
+    await addDoc(collection(db, "flags", targetUid, "reports"), {
+      from: fromUid,
+      text,
+      level,
+      createdAt: serverTimestamp()
+    });
+    
+    console.log(`🚩 Red flag given: ${level} flag from ${fromUid} to ${targetUid}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error giving red flag:', error);
+    return false;
+  }
+}
+
+// Initialize passport document for new users
+async function initializePassport(uid) {
+  if (!uid) {
+    console.error('❌ initializePassport: Missing UID');
+    return false;
+  }
+  
+  try {
+    const passportRef = doc(db, "passport", uid);
+    const passportDoc = await getDoc(passportRef);
+    
+    if (!passportDoc.exists()) {
+      await setDoc(passportRef, {
+        likesGiven: 0,
+        matchesMade: 0,
+        gamesPlayed: 0,
+        roomsJoined: [],
+        stamps: [],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
+      console.log(`🎫 Passport initialized for user ${uid}`);
+      return true;
+    }
+    
+    return false; // Already exists
+  } catch (error) {
+    console.error('❌ Error initializing passport:', error);
+    return false;
+  }
+}
+
+// Get user's achievement history
+async function getUserAchievements(uid, limit = 20) {
+  if (!uid) return [];
+  
+  try {
+    const q = query(
+      collection(db, "achievements", uid, "history"),
+      orderBy("createdAt", "desc"),
+      limit(limit)
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('❌ Error getting user achievements:', error);
+    return [];
+  }
+}
+
+// Get leaderboard data
+async function getLeaderboard(limitCount = 20) {
+  try {
+    const q = query(
+      collection(db, "users"),
+      orderBy("points", "desc"),
+      limit(limitCount)
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('❌ Error getting leaderboard:', error);
+    return [];
+  }
+}
+
+// Get user's passport data
+async function getUserPassport(uid) {
+  if (!uid) return null;
+  
+  try {
+    const passportDoc = await getDoc(doc(db, "passport", uid));
+    return passportDoc.exists() ? passportDoc.data() : null;
+  } catch (error) {
+    console.error('❌ Error getting user passport:', error);
+    return null;
+  }
+}
+
+// =====================================================
 // Exports
 // =====================================================
 export {
@@ -1224,9 +1445,19 @@ export {
   clearLoungeChat,
   clearEventChat,
   clearRoomChat,
+  deleteRoom,
   clearTableChat,
   clearLiveStreamChat,
   clearAllStagesChat,
   getAvailableDistricts,
   clearProfileCompletion,
+  // Achievement and Passport System
+  logAchievement,
+  updatePassport,
+  grantBadge,
+  giveRedFlag,
+  initializePassport,
+  getUserAchievements,
+  getLeaderboard,
+  getUserPassport,
 };
