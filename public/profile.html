@@ -1,54 +1,2100 @@
-<!DOCTYPE html><html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unhinged - Profile</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="js/firebase.js" type="module"></script>
-  <script src="js/profile_lock.js" defer></script>
-  <script src="js/profile-modal.js" defer></script>
-  <script src="js/recycling-bin.js" defer></script>
-  <script src="js/deck-filters.js" defer></script>
-  <script src="js/matching.js" defer></script>
-  <script src="js/districts-chat-engine.js" defer></script>
-  <script src="js/casualties-manager.js" defer></script>
-  <script src="js/wire-clean-buttons.js" defer></script>
-</head>
-<body>
-  <div class="button-container">
-    <div class="button-row">
-      <button class="btn btn-points" id="userPoints" onclick="window.location.href='leaderboard.html'">🏆 310pts</button>
-      <button class="btn btn-gray" id="filterBtn" onclick="applyFilters()">Filter</button>
-      <button class="btn btn-gray" id="inboxBtn" onclick="openChatInbox()">Inbox</button>
-      <button class="btn btn-gradient" id="browseMatchesBtn" onclick="startMatchingDeck()">Browse Matches</button>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Unhinged - Profile</title>
+
+    <style>
+      :root {
+        --bg: #0e0e12;
+        --panel: #15161b;
+        --muted: #cfd0de;
+        --red: #E11D2A;
+        --green: #4CAF50;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: var(--bg);
+        color: #fff;
+        min-height: 100vh;
+      }
+
+      .wrap {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+
+      /* Buttons */
+      .btn {
+        border: none;
+        background: var(--red);
+        color: #fff;
+        padding: 0.5rem 0.9rem;
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+      }
+      /* Lighten the secondary buttons for better contrast */
+      .btn.secondary {
+        background: #3a3a3a;
+        color: #fff;
+      }
+      /* Lighten ghost button border for contrast */
+      .btn.ghost {
+        background: transparent;
+        border: 1px solid #444;
+      }
+      .btn.pill {
+        border-radius: 16px;
+        padding: 0.55rem 1rem;
+      }
+      .btn.small {
+        padding: 0.35rem 0.7rem;
+        font-size: 0.9rem;
+      }
+      .chaos-btn {
+        background: var(--red);
+        color: #fff;
+        border: none;
+        border-radius: 16px;
+        padding: 8px 16px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Text helpers */
+      .muted {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      /* ===== SECTION: Top Bar ===== */
+      .topbar {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        background: var(--panel);
+        border-bottom: 1px solid #2a2a2a;
+        flex-wrap: wrap;
+      }
+      .brand {
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .nav-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      
+      /* Mobile adjustments for nav */
+      @media (max-width: 768px) {
+        .topbar {
+          flex-direction: column;
+          gap: 0.75rem;
+          padding: 0.5rem;
+        }
+        .nav-actions {
+          width: 100%;
+          justify-content: center;
+        }
+        .nav-actions .btn,
+        .nav-actions .chaos-btn {
+          font-size: 0.85rem;
+          padding: 0.4rem 0.7rem;
+        }
+      }
+
+      /* ===== SECTION: Content Wrapper ===== */
+      .content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 12px;
+        gap: 12px;
+        width: 100%;
+        overflow-x: hidden;
+      }
+      
+      /* Mobile content adjustments */
+      @media (max-width: 480px) {
+        .content {
+          padding: 8px;
+          gap: 8px;
+        }
+      }
+
+      /* ===== SECTION: Swipe Card ===== */
+      .card-frame {
+        position: relative;
+        width: 92%;
+        max-width: 420px;
+        height: 72vh;
+        border: 2px solid #2a2a2a;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #000;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        touch-action: pan-y;
+      }
+      
+      /* Mobile card adjustments */
+      @media (max-width: 480px) {
+        .card-frame {
+          width: 95%;
+          height: 65vh;
+          min-height: 500px;
+          border-radius: 12px;
+        }
+      }
+      
+      @media (max-width: 360px) {
+        .card-frame {
+          width: 98%;
+          height: 60vh;
+          min-height: 450px;
+        }
+      }
+      .main-photo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        user-select: none;
+        -webkit-user-drag: none;
+        cursor: pointer;
+      }
+      .info-overlay {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 14px 16px;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.78));
+        pointer-events: none;
+      }
+      .info-overlay h2 {
+        margin: 0;
+        font-size: 1.4rem;
+      }
+      .handle {
+        font-size: 0.95rem;
+        color: #cfd0de;
+        margin-top: 2px;
+      }
+      .sub {
+        font-size: 0.9rem;
+        color: #ddd;
+        margin-top: 2px;
+      }
+      .badges,
+      .flags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .badges img {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1px solid #4cafef;
+        background: #2a2a3a;
+        padding: 2px;
+      }
+      .flags .flag-pill {
+        font-size: 0.75rem;
+        border: 1px solid #3a3b44;
+        border-radius: 999px;
+        padding: 2px 8px;
+        background: #14151a;
+      }
+      .indicator {
+        position: absolute;
+        top: 16px;
+        font-size: 1.4rem;
+        font-weight: 700;
+        padding: 6px 12px;
+        border: 3px solid;
+        border-radius: 8px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.12s ease;
+      }
+      .indicator.pass {
+        left: 14px;
+        color: var(--red);
+        border-color: var(--red);
+        transform: rotate(-18deg);
+      }
+      .indicator.like {
+        right: 14px;
+        color: var(--green);
+        border-color: var(--green);
+        transform: rotate(18deg);
+      }
+      .empty {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ddd;
+        font-size: 1.1rem;
+      }
+
+      /* ===== SECTION: Bottom Actions ===== */
+      .actions {
+        width: 100%;
+        max-width: 480px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 8px 0 16px;
+        position: relative;
+        z-index: 20;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .action-btn {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: none;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .action-btn:hover {
+        transform: scale(1.1);
+      }
+      .pass-btn {
+        background: #2a2a2a;
+        color: var(--red);
+        border: 2px solid var(--red);
+      }
+      .like-btn {
+        background: #2a2a2a;
+        color: var(--green);
+        border: 2px solid var(--green);
+      }
+      
+      /* Mobile adjustments for actions */
+      @media (max-width: 480px) {
+        .actions {
+          padding: 12px;
+          gap: 8px;
+        }
+        .action-btn {
+          width: 50px;
+          height: 50px;
+          font-size: 1.3rem;
+        }
+        .chaos-btn {
+          font-size: 0.85rem;
+          padding: 6px 12px;
+        }
+      }
+
+      /* ===== SECTION: Modal Base ===== */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        z-index: 60;
+      }
+      .modal {
+        width: 100%;
+        max-width: 700px;
+        background: var(--panel);
+        border: 1px solid #2a2a2a;
+        border-radius: 12px;
+        padding: 1rem;
+      }
+      /* Scroll fix: allow the edit modal to scroll */
+      #editModal .modal {
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      .modal h3 {
+        margin: 0 0 0.5rem;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin: 0.5rem 0 0.25rem;
+      }
+      .req {
+        color: #ff6b6b;
+        font-weight: 700;
+      }
+      input[type='text'],
+      textarea,
+      input[type='number'],
+      select {
+        width: 100%;
+        padding: 0.6rem;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        background: #12131a;
+        color: #fff;
+      }
+      .row {
+        display: flex;
+        gap: 0.5rem;
+      }
+      .row > * {
+        flex: 1;
+      }
+      .status {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+      }
+      .ok {
+        color: #6fdc8c;
+      }
+      .err {
+        color: #ff8e8e;
+      }
+      .prog {
+        color: #ffd27f;
+      }
+      .invalid {
+        outline: 2px solid #ff6b6b;
+        outline-offset: 2px;
+        border-color: #ff6b6b !important;
+      }
+
+      /* Gallery */
+      .gallery {
+        margin-top: 0.5rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+        gap: 8px;
+      }
+      .thumb {
+        position: relative;
+        width: 100%;
+        padding-top: 100%;
+        border: 2px solid #2a2a2a;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #0b0b0f;
+        cursor: pointer;
+      }
+      .thumb img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .label-pill {
+        position: absolute;
+        left: 6px;
+        top: 6px;
+        font-size: 0.7rem;
+        background: #000000aa;
+        padding: 2px 6px;
+        border-radius: 999px;
+        border: 1px solid #2a2a2a;
+      }
+      .thumb.primary {
+        border-color: var(--red);
+      }
+      .hint {
+        font-size: 0.85rem;
+        color: #cfd0de;
+        margin-top: 0.25rem;
+      }
+
+      /* ===== INBOX / GATING ===== */
+      .inbox-btn {
+        background: #2a2a2a;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 0.5rem 0.8rem;
+        cursor: pointer;
+      }
+      .inbox-modal {
+        position: fixed;
+        inset: 0;
+        background: #0009;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        z-index: 80;
+      }
+      .inbox-card {
+        width: 100%;
+        max-width: 900px;
+        background: var(--panel);
+        border: 1px solid #2a2a2a;
+        border-radius: 12px;
+        padding: 12px;
+      }
+      .inbox-tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+      /* Lighten the inbox tab colours for readability */
+      .inbox-tab {
+        border: 1px solid #444;
+        background: #3a3a3a;
+        border-radius: 999px;
+        padding: 0.45rem 0.8rem;
+        cursor: pointer;
+        color: #fff;
+      }
+      .inbox-tab.active {
+        border-color: var(--red);
+        background: #4a4a4a;
+        box-shadow: 0 0 0 2px #E11D2A33 inset;
+      }
+      .inbox-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 10px;
+        min-height: 160px;
+      }
+      .inbox-item {
+        position: relative;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #111;
+      }
+      .inbox-item img {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+        display: block;
+      }
+      .inbox-meta {
+        padding: 8px;
+      }
+      .inbox-name {
+        font-weight: 700;
+      }
+      .inbox-sub {
+        font-size: 0.9rem;
+        color: #cfd0de;
+      }
+      .locked .blur {
+        filter: blur(6px);
+      }
+      .lock-badge {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(#0000, #0008);
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-align: center;
+        padding: 8px;
+      }
+      .lock-msg {
+        background: #E11D2A;
+        border: none;
+        border-radius: 999px;
+        padding: 0.35rem 0.7rem;
+        cursor: pointer;
+        margin-top: 0.5rem;
+      }
+
+      /* ===== CHAT MODAL ===== */
+      .chat-modal {
+        position: fixed;
+        inset: 0;
+        background: #0009;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        z-index: 90;
+      }
+      .chat-card {
+        width: 100%;
+        max-width: 700px;
+        background: var(--panel);
+        border: 1px solid #2a2a2a;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        height: 75vh;
+      }
+      .chat-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #2a2a2a;
+      }
+      .chat-scroll {
+        flex: 1;
+        overflow: auto;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .bubble {
+        max-width: 70%;
+        padding: 8px 10px;
+        border-radius: 12px;
+      }
+      .bubble.me {
+        align-self: flex-end;
+        background: #E11D2A;
+        color: #fff;
+      }
+      .bubble.them {
+        align-self: flex-start;
+        background: #2a2a2a;
+      }
+      .chat-send {
+        display: flex;
+        gap: 8px;
+        padding: 10px;
+        border-top: 1px solid #2a2a2a;
+      }
+      .chat-send input {
+        flex: 1;
+        padding: 10px;
+        border-radius: 10px;
+        background: #12131a;
+        border: 1px solid #2a2a2a;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+
+    <div class="topbar">
+      <div class="brand" id="topLine">Your Profile</div>
+      <div class="nav-actions">
+        <button
+          class="btn secondary"
+          id="filterBtn"
+          type="button"
+        >
+          Filter
+        </button>
+
+        <button
+          class="btn secondary inbox-btn"
+          id="inboxBtn"
+          type="button"
+        >
+          Inbox
+        </button>
+        <button
+          class="btn secondary"
+          id="recyclingBinBtn"
+          type="button"
+          title="♻️ Recycling Bin"
+        >
+          ♻️ Recycling Bin
+        </button>
+        <button class="btn danger" id="browseBtn" type="button">Browse Matches</button>
+
+        <button class="btn secondary" id="casualtiesBtn" type="button">
+          Casualties Upload
+        </button>
+
+        <a class="chaos-btn" href="./app.html">Community Chaos</a>
+
+        <button class="btn secondary" id="myProfileBtn" type="button">
+          My Profile
+        </button>
+        <button class="btn secondary" id="upgradeBtn" type="button">Go Paid</button>
+
+        <button
+          class="btn"
+          id="editBtn"
+          type="button"
+        >
+          Edit Profile
+        </button>
+
+        <button class="btn secondary" id="logoutBtn" type="button">Logout</button>
+        <button
+          class="btn ghost"
+          id="deleteBtn"
+          type="button"
+          title="Delete my account"
+        >
+          Delete
+        </button>
+      </div>
     </div>
-    <div class="button-row">
-      <button class="btn btn-dark-red" id="casualtiesUploadBtn" onclick="openCasualtiesUploader()">Casualties Upload</button>
-      <button class="btn btn-gray" id="recycleBtn" onclick="recycleProfiles()">🗑️ Recycling Bin ♻️</button>
+
+    <div class="modal-backdrop" id="casualtiesModal">
+      <div class="modal">
+        <h3>Casualties of Modern Dating</h3>
+        <div id="casualtiesPwdSection">
+          <label for="casualtiesPassword">Enter password:</label>
+          <input id="casualtiesPassword" type="password" />
+          <button class="btn" id="casualtiesCheckBtn" type="button">Check</button>
+        </div>
+        <div id="casualtiesUploadSection" style="display: none;">
+          <label for="casualtiesFile">Upload image:</label>
+          <input id="casualtiesFile" type="file" accept="image/*" />
+          <label for="casualtiesCaption">Caption (optional):</label>
+          <input id="casualtiesCaption" type="text" placeholder="Caption" />
+          <button class="btn" id="casualtiesSubmit" type="button">Upload</button>
+        </div>
+        <button class="btn secondary" id="closeCasualties" type="button">
+          Close
+        </button>
+      </div>
     </div>
-    <div class="button-row">
-      <button class="btn btn-red" id="chaosBtn" onclick="window.location.href='chaos.html'">Community Chaos</button>
-      <button class="btn btn-gray" id="myProfileBtn" onclick="openProfileModal()">My Profile</button>
-      <button class="btn btn-gradient" id="goPaidBtn">Go Paid</button>
+
+    <div class="content">
+      <div class="card-frame" id="cardFrame">
+        <img class="main-photo" id="main-photo" src="" alt="Profile Photo" />
+        <div class="info-overlay">
+          <h2 id="name"></h2>
+          <div class="handle" id="handle"></div>
+          <div class="sub" id="sub-info"></div>
+          <div class="badges" id="badges"></div>
+          <div class="flags" id="flags"></div>
+        </div>
+        <div class="indicator pass" id="pass-indicator">PASS</div>
+        <div class="indicator like" id="like-indicator">LIKE</div>
+        <div class="empty" id="empty" style="display: none;">No more matches</div>
+      </div>
+
+      <div class="actions">
+        <button class="action-btn pass-btn" id="pass-btn" aria-label="Pass">
+          Pass
+        </button>
+        <a class="chaos-btn" href="./app.html">Community Chaos</a>
+        <button class="action-btn like-btn" id="like-btn" aria-label="Like">
+          Like
+        </button>
+      </div>
     </div>
-    <div class="button-row">
-      <button class="btn btn-red" id="editProfileBtn" onclick="editUserProfile()">Edit Profile</button>
-      <button class="btn btn-gray" id="logoutBtn" onclick="logoutUser()">Logout</button>
-      <button class="btn btn-dark-red" id="deleteBtn" onclick="deleteUserAccount()">Delete</button>
+
+    <div class="modal-backdrop" id="editModal">
+      <div class="modal">
+        <h3>Edit Profile</h3>
+        <div class="muted" id="uidLine"></div>
+
+        <div class="row">
+          <div>
+            <label for="displayName">
+              Display name
+              <span class="req" id="reqDisplayName" hidden>*</span>
+            </label>
+            <input id="displayName" type="text" />
+          </div>
+          <div>
+            <label for="username">Username</label>
+            <input id="username" type="text" placeholder="yourhandle" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="age">
+              Age
+              <span class="req" id="reqAge" hidden>*</span>
+            </label>
+            <input id="age" type="number" min="18" max="100" />
+          </div>
+          <div>
+            <label for="location">
+              Location
+              <span class="req" id="reqLocation" hidden>*</span>
+            </label>
+            <input id="location" type="text" placeholder="City, State" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="gender">Gender</label>
+            <select id="gender">
+              <option value="">Prefer not to say</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+            </select>
+          </div>
+          <div></div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="hobbies">Hobbies</label>
+            <input id="hobbies" type="text" placeholder="e.g., hiking, gaming" />
+          </div>
+          <div>
+            <label for="interests">Interests</label>
+            <input id="interests" type="text" placeholder="e.g., live music, travel" />
+          </div>
+        </div>
+
+        <label for="bio">Bio</label>
+        <textarea id="bio" rows="3" placeholder="Say something..."></textarea>
+
+        <label for="avatar" style="margin-top: 0.5rem;">
+          Add photos (you can select multiple)
+          <span class="req" id="reqPhoto" hidden>*</span>
+        </label>
+        <input id="avatar" type="file" accept="image/*" multiple />
+        <div class="hint">
+          Click a saved photo below to set it as your <b>Primary</b>. Selected
+          files preview below before upload.
+        </div>
+        <div class="status" id="uploadStatus"></div>
+
+        <div class="muted" style="margin-top: 0.5rem;" id="previewTitle" hidden>
+          Selected (not yet uploaded)
+        </div>
+        <div class="gallery" id="previewGallery" hidden></div>
+
+        <div class="muted" style="margin-top: 0.75rem;">Saved Photos</div>
+        <div class="gallery" id="gallery"></div>
+
+        <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+          <button
+            class="btn secondary"
+            id="cancelEdit"
+            type="button"
+          >
+            Cancel
+          </button>
+          <button class="btn" id="saveEdit" type="button">Save</button>
+        </div>
+      </div>
     </div>
-  </div>  <h3 id="username">@Loading...</h3>
-  <img id="profilePhoto" class="profile-photo" src="" alt="Profile Photo"/>  <div class="action-buttons">
-    <button class="action-btn pass-btn" id="passBtn">❌</button>
-    <button class="action-btn like-btn" id="likeBtn">❤️</button>
-  </div>  <script>
-    // Basic click wiring for preview test (ensure all are firing in actual build)
-    function applyFilters() { console.log("🔎 Filter triggered"); }
-    function openChatInbox() { console.log("📨 Inbox opened"); }
-    function startMatchingDeck() { console.log("❤️ Matching started"); }
-    function openCasualtiesUploader() { console.log("📝 Upload triggered"); }
-    function openProfileModal() { console.log("👤 Profile modal opened"); }
-    function editUserProfile() { console.log("✏️ Edit Profile"); }
-    function logoutUser() { console.log("🚪 Logged out"); }
-    function deleteUserAccount() { console.log("💥 Delete triggered"); }
-  </script></body>
+
+    <div class="inbox-modal" id="inboxModal">
+      <div class="inbox-card">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;"
+        >
+          <h3 style="margin: 0">Inbox</h3>
+          <button
+            class="btn secondary"
+            id="closeInbox"
+            type="button"
+          >
+            Close
+          </button>
+        </div>
+        <div class="inbox-tabs" id="inboxTabs">
+          <button class="inbox-tab active" data-tab="likes">Likes</button>
+          <button class="inbox-tab" data-tab="views">Views</button>
+          <button class="inbox-tab" data-tab="matches">Matches</button>
+          <button class="inbox-tab" data-tab="messages">Messages</button>
+        </div>
+        <div class="inbox-list" id="inboxList"></div>
+      </div>
+    </div>
+
+    <div class="chat-modal" id="chatModal">
+      <div class="chat-card">
+        <div class="chat-head">
+          <div id="chatTitle">Chat</div>
+          <button
+            class="btn secondary"
+            id="closeChat"
+            type="button"
+          >
+            Close
+          </button>
+        </div>
+        <div class="chat-scroll" id="chatScroll"></div>
+        <div class="chat-send">
+          <input id="chatInput" type="text" placeholder="Type a message..." />
+          <button class="btn" id="chatSend" type="button">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="filterModal">
+      <div class="modal">
+        <h3>Filters</h3>
+        <label for="filterLocation">Location</label>
+        <input id="filterLocation" type="text" placeholder="City, State" />
+        <label>Age Range</label>
+        <div class="row">
+          <input id="filterAgeMin" type="number" min="18" max="99" placeholder="Min" />
+          <input id="filterAgeMax" type="number" min="18" max="99" placeholder="Max" />
+        </div>
+        <div
+          style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;"
+        >
+          <button
+            class="btn secondary"
+            id="cancelFilter"
+            type="button"
+          >
+            Cancel
+          </button>
+          <button class="btn" id="applyFilter" type="button">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="recyclingBinModal">
+      <div class="modal">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
+        >
+          <h3 style="margin: 0">♻️ Recycling Bin</h3>
+          <button
+            class="btn secondary"
+            id="closeRecyclingBin"
+            type="button"
+          >
+            Close
+          </button>
+        </div>
+        <div id="recyclingBinCount" class="muted" style="margin-bottom: 16px;">Loading recycled profiles...</div>
+        <div id="recyclingBinList" class="inbox-list" style="min-height: 200px;"></div>
+        <div style="margin-top: 16px; text-align: center;">
+          <button class="btn secondary" id="clearRecyclingBin" type="button">Clear All</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      /* ===== SECTION: Firebase Setup ===== */
+      // Import from shared firebase.js (like the working version)
+      import { 
+        auth, 
+        db, 
+        storage,
+        waitForAuth,
+        getUserDoc,
+        ensureUserDoc,
+        saveProfileFields,
+        uploadUserPhoto,
+        setPrimaryPhoto
+      } from "./js/firebase.js";
+
+      // Simple RecyclingBin class inline
+      class RecyclingBin {
+        constructor() {
+          this.storageKey = 'unhinged_recycling_bin';
+        }
+        getProfiles() {
+          try {
+            return JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+          } catch { return []; }
+        }
+        addProfile(profile) {
+          const profiles = this.getProfiles();
+          profiles.push({ ...profile, timestamp: Date.now() });
+          localStorage.setItem(this.storageKey, JSON.stringify(profiles));
+        }
+        removeProfile(uid) {
+          const profiles = this.getProfiles().filter(p => p.uid !== uid);
+          localStorage.setItem(this.storageKey, JSON.stringify(profiles));
+        }
+        clear() {
+          localStorage.removeItem(this.storageKey);
+        }
+        getCount() {
+          return this.getProfiles().length;
+        }
+      }
+      
+      // Import additional Firebase functions from shared firebase.js
+      import {
+        onAuthStateChanged,
+        updateProfile,
+        signOut,
+        collection,
+        getDocs,
+        doc,
+        getDoc,
+        setDoc,
+        deleteDoc,
+        serverTimestamp,
+        query,
+        where,
+        orderBy,
+        limit,
+        addDoc,
+        onSnapshot,
+        updateDoc,
+        sRef,
+        uploadBytes,
+        getDownloadURL
+      } from "./js/firebase.js";
+
+      // ===== Global error traps so we can see what's blocking button wiring =====
+      window.addEventListener("error", (e) => {
+        console.error("Script error", e);
+      });
+      window.addEventListener("unhandledrejection", (e) => {
+        console.error("Unhandled rejection", e);
+      });
+
+      /* ===== SECTION: Config (Requirements & Membership) ===== */
+      // Updated: Require photo, location, display name, and age
+      const REQUIRED = { PHOTO: true, LOCATION: true, DISPLAY_NAME: true, AGE: true };
+      const MEMBERSHIP = { requiredForViews: false, requiredForLikes: false };
+
+      /* ===== SECTION: Public Profile Modal ===== */
+      // helper to render a public profile overlay with more detail + scrollable photos
+      function showPublicProfile(user) {
+        const modal = document.createElement("div");
+        modal.style.position = "fixed";
+        modal.style.inset = "0";
+        modal.style.background = "rgba(0,0,0,0.65)";
+        modal.style.display = "flex";
+        modal.style.alignItems = "center";
+        modal.style.justifyContent = "center";
+        modal.style.zIndex = "100";
+
+        const card = document.createElement("div");
+        card.style.background = "var(--panel)";
+        card.style.color = "#fff";
+        card.style.padding = "1rem";
+        card.style.borderRadius = "10px";
+        card.style.maxWidth = "400px";
+        card.style.textAlign = "left";
+
+        const name = user.displayName || "Member";
+        const username = user.username ? `@${user.username}` : "";
+        const ageText = typeof user.age === "number" ? `${user.age} years old` : "";
+        const location = user.location || "";
+
+        // Prepare photos (primary first) and simple next/prev controls
+        const photosList = Array.isArray(user.photos) ? user.photos.slice() : [];
+        const fallbackPrimary = safePrimaryPhoto(user) || photosList[0] || NEUTRAL_PHOTO;
+        if (photosList.length === 0 || photosList[0] !== fallbackPrimary) photosList.unshift(fallbackPrimary);
+        let currentPhotoIndex = 0;
+
+        let photoHtml = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:.75rem;">
+          <button id="photoPrev" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer">&lt;</button>
+          <img id="modalPrimaryPhoto" src="${photosList[0]}" style="flex:1;max-height:360px;object-fit:cover;border-radius:8px;" alt="Profile photo">
+          <button id="photoNext" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer">&gt;</button>
+        </div>`;
+        if (photosList.length > 1) {
+          photoHtml += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem">`;
+          for (let i = 0; i < photosList.length; i++) {
+            const url = photosList[i];
+            const border = i === 0 ? '2px solid var(--red)' : '2px solid transparent';
+            photoHtml += `<img class="modal-photo-thumb" data-index="${i}" src="${encodeURI(url)}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:${border};cursor:pointer;" alt="Photo ${i + 1}">`;
+          }
+          photoHtml += `</div>`;
+        }
+
+        card.innerHTML = `
+          ${photoHtml}
+          <h2 style="margin-top:0;margin-bottom:0">${name}</h2>
+          ${username ? `<div style="font-size:.9rem;color:var(--muted);margin-bottom:.25rem">${username}</div>` : ""}
+          ${ageText || location ? `<div style="font-size:.9rem;color:var(--muted);margin-bottom:.25rem">${[ageText, location].filter(Boolean).join(' • ')}</div>` : ""}
+          <div style="text-align:center;margin-top:.5rem"><button class="btn small secondary" id="closeMinimalProfile">Close</button></div>
+        `;
+        modal.appendChild(card);
+        document.body.appendChild(modal);
+
+        modal.querySelector("#closeMinimalProfile").addEventListener("click", () => document.body.removeChild(modal));
+        modal.addEventListener("click", (ev) => {
+          if (ev.target === modal) document.body.removeChild(modal);
+        });
+
+        // Gallery interactions
+        try {
+          const modalPrimary = modal.querySelector('#modalPrimaryPhoto');
+          const thumbElems = modal.querySelectorAll('.modal-photo-thumb');
+          const highlight = (index) => {
+            thumbElems.forEach((t) => (t.style.border = '2px solid transparent'));
+            const currentThumb = modal.querySelector(`.modal-photo-thumb[data-index="${index}"]`);
+            if (currentThumb) currentThumb.style.border = '2px solid var(--red)';
+          };
+          thumbElems.forEach((imgThumb) => {
+            imgThumb.addEventListener('click', () => {
+              const idx = Number(imgThumb.dataset.index);
+              if (!Number.isNaN(idx)) {
+                currentPhotoIndex = idx;
+                modalPrimary.src = photosList[idx];
+                highlight(idx);
+              }
+            });
+          });
+          modal.querySelector('#photoPrev').addEventListener('click', () => {
+            if (photosList.length < 2) return;
+            currentPhotoIndex = (currentPhotoIndex - 1 + photosList.length) % photosList.length;
+            modalPrimary.src = photosList[currentPhotoIndex];
+            highlight(currentPhotoIndex);
+          });
+          modal.querySelector('#photoNext').addEventListener('click', () => {
+            if (photosList.length < 2) return;
+            currentPhotoIndex = (currentPhotoIndex + 1) % photosList.length;
+            modalPrimary.src = photosList[currentPhotoIndex];
+            highlight(currentPhotoIndex);
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      /* ===== SECTION: DOM Refs ===== */
+      const topLine = document.getElementById('topLine');
+      const myProfileBtn = document.getElementById('myProfileBtn');
+      const editBtn = document.getElementById('editBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const upgradeBtn = document.getElementById('upgradeBtn');
+      const inboxBtn = document.getElementById('inboxBtn');
+      const deleteBtn = document.getElementById('deleteBtn');
+      const filterBtn = document.getElementById('filterBtn');
+
+      const cardFrame = document.getElementById('cardFrame');
+      const mainPhoto = document.getElementById('main-photo');
+      const nameEl = document.getElementById('name');
+      const handleEl = document.getElementById('handle');
+      const subInfoEl = document.getElementById('sub-info');
+      const badgesEl = document.getElementById('badges');
+      const flagsEl = document.getElementById('flags');
+      const emptyEl = document.getElementById('empty');
+
+      const passBtn = document.getElementById('pass-btn');
+      const likeBtn = document.getElementById('like-btn');
+      const recyclingBinBtn = document.getElementById('recyclingBinBtn');
+      const browseBtn = document.getElementById('browseBtn');
+
+      const passIndicator = document.getElementById('pass-indicator');
+      const likeIndicator = document.getElementById('like-indicator');
+
+      const casualtiesBtn = document.getElementById('casualtiesBtn');
+      const casualtiesModal = document.getElementById('casualtiesModal');
+
+      /* ===== SECTION: State ===== */
+      let currentUser = null;
+      let allUsers = [];
+      let seenUserIds = new Set();
+      let currentUserIndex = 0;
+      let activeFilters = { location: '', ageMin: null, ageMax: null };
+      let recyclingBin = null;
+      let isRecyclingMode = false;
+      let recycledProfiles = [];
+      let recycledIndex = 0;
+
+      // Helper function for safe primary photo
+      const NEUTRAL_PHOTO =
+        'data:image/svg+xml;utf8,' +
+        encodeURIComponent(
+          "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1200'><rect width='100%' height='100%' fill='#0b0b0f'/><circle cx='400' cy='420' r='160' fill='#20222b'/><rect x='210' y='650' width='380' height='260' rx='28' fill='#20222b'/></svg>"
+        );
+
+      function safePrimaryPhoto(user) {
+        if (user?.primaryPhoto && typeof user.primaryPhoto === 'string') return user.primaryPhoto;
+        if (user?.photoURL && typeof user.photoURL === 'string') return user.photoURL;
+        if (Array.isArray(user?.photos) && user.photos.length > 0) return user.photos[0];
+        return NEUTRAL_PHOTO;
+      }
+
+      /* ===== SECTION: Filter Functionality ===== */
+      function showFilterModal() {
+        const modal = document.getElementById('filterModal');
+        const locationInput = document.getElementById('filterLocation');
+        const ageMinInput = document.getElementById('filterAgeMin');
+        const ageMaxInput = document.getElementById('filterAgeMax');
+
+        locationInput.value = activeFilters.location || '';
+        ageMinInput.value = activeFilters.ageMin || '';
+        ageMaxInput.value = activeFilters.ageMax || '';
+
+        modal.style.display = 'flex';
+      }
+
+      function hideFilterModal() {
+        document.getElementById('filterModal').style.display = 'none';
+      }
+
+      function applyFilters() {
+        const locationInput = document.getElementById('filterLocation');
+        const ageMinInput = document.getElementById('filterAgeMin');
+        const ageMaxInput = document.getElementById('filterAgeMax');
+
+        activeFilters.location = locationInput.value.trim().toLowerCase();
+        activeFilters.ageMin = ageMinInput.value ? parseInt(ageMinInput.value) : null;
+        activeFilters.ageMax = ageMaxInput.value ? parseInt(ageMaxInput.value) : null;
+
+        hideFilterModal();
+        // Reset and reload with filters
+        currentUserIndex = 0;
+        seenUserIds.clear();
+        loadAndDisplayNextUser();
+      }
+
+      function matchesFilters(user) {
+        if (activeFilters.location && user.location) {
+          if (!user.location.toLowerCase().includes(activeFilters.location)) {
+            return false;
+          }
+        }
+
+        if (activeFilters.ageMin !== null && user.age < activeFilters.ageMin) {
+          return false;
+        }
+
+        if (activeFilters.ageMax !== null && user.age > activeFilters.ageMax) {
+          return false;
+        }
+
+        return true;
+      }
+
+      /* ===== SECTION: Core Matching Logic ===== */
+      function displayUser(user) {
+        if (!user) {
+          showEmpty();
+          return;
+        }
+
+        hideEmpty();
+        
+        const photoUrl = safePrimaryPhoto(user);
+        mainPhoto.src = photoUrl || NEUTRAL_PHOTO;
+
+        const displayName = user.displayName || 'Anonymous';
+        const username = user.username ? `@${user.username}` : '';
+        
+        nameEl.textContent = displayName;
+        handleEl.textContent = username;
+        
+        const ageText = user.age ? `${user.age} years old` : '';
+        const locationText = user.location || '';
+        const subInfo = [ageText, locationText].filter(Boolean).join(' • ');
+        subInfoEl.textContent = subInfo;
+
+        // Display badges
+        badgesEl.innerHTML = '';
+        if (user.badges && Array.isArray(user.badges)) {
+          user.badges.forEach(badge => {
+            const img = document.createElement('img');
+            img.src = badge.icon || '/assets/badge-icon.svg';
+            img.alt = badge.name || 'Badge';
+            badgesEl.appendChild(img);
+          });
+        }
+
+        // Display flags/red flags
+        flagsEl.innerHTML = '';
+        if (user.redFlags && Array.isArray(user.redFlags)) {
+          user.redFlags.forEach(flag => {
+            const span = document.createElement('span');
+            span.className = 'flag-pill';
+            span.textContent = flag.text || flag;
+            flagsEl.appendChild(span);
+          });
+        }
+      }
+
+      function showEmpty() {
+        mainPhoto.style.display = 'none';
+        emptyEl.style.display = 'flex';
+      }
+
+      function hideEmpty() {
+        mainPhoto.style.display = 'block';
+        emptyEl.style.display = 'none';
+      }
+
+      async function loadAndDisplayNextUser() {
+        try {
+          // Check if we're in recycling mode
+          if (isRecyclingMode) {
+            displayRecycledProfile();
+            return;
+          }
+
+          if (allUsers.length === 0) {
+            await loadUsers();
+          }
+
+          // Find next user that matches filters and hasn't been seen
+          let foundUser = null;
+          let attempts = 0;
+          const maxAttempts = allUsers.length * 2;
+
+          while (!foundUser && attempts < maxAttempts) {
+            if (currentUserIndex >= allUsers.length) {
+              currentUserIndex = 0;
+            }
+
+            const candidateUser = allUsers[currentUserIndex];
+            currentUserIndex++;
+            attempts++;
+
+            if (!candidateUser || !candidateUser.uid) continue;
+            if (candidateUser.uid === currentUser?.uid) continue;
+            if (seenUserIds.has(candidateUser.uid)) continue;
+            if (!matchesFilters(candidateUser)) continue;
+
+            foundUser = candidateUser;
+            seenUserIds.add(candidateUser.uid);
+          }
+
+          displayUser(foundUser);
+
+        } catch (error) {
+          console.error('Error loading next user:', error);
+          showEmpty();
+        }
+      }
+
+      async function loadUsers() {
+        try {
+          console.log('🔄 Loading users...');
+          
+          // Load ALL users first to debug what's in the database
+          const allUsersQuery = query(collection(db, 'users'));
+          const allSnapshot = await getDocs(allUsersQuery);
+          
+          console.log(`📊 Total users in database: ${allSnapshot.size}`);
+          
+          let usersWithPhotos = 0;
+          let usersWithPhotoFlag = 0;
+          let validUsers = 0;
+          
+          allUsers = [];
+          
+          allSnapshot.forEach(docSnap => {
+            const userData = docSnap.data();
+            const isCurrentUser = userData.uid === currentUser?.uid;
+            
+            if (!isCurrentUser) {
+              // Check if user has actual photos
+              const hasActualPhotos = (userData.photoURL && userData.photoURL.trim() && userData.photoURL !== 'undefined') ||
+                                     (Array.isArray(userData.photos) && userData.photos.length > 0 && 
+                                      userData.photos.some(url => url && url.trim() && url !== 'undefined'));
+              
+              if (hasActualPhotos) usersWithPhotos++;
+              if (userData.hasPhotos) usersWithPhotoFlag++;
+              
+              // Use users with actual photos regardless of hasPhotos flag
+              if (hasActualPhotos && userData.uid) {
+                allUsers.push(userData);
+                validUsers++;
+                console.log(`✅ Added user for matching: ${userData.displayName || userData.uid?.slice(0,8)} (hasPhotos: ${userData.hasPhotos}, actualPhotos: ${hasActualPhotos})`);
+              }
+            }
+          });
+
+          // Comprehensive debugging output
+          console.log(`📊 Database analysis:`, {
+            totalUsers: allSnapshot.size,
+            excludingCurrentUser: allSnapshot.size - 1,
+            usersWithActualPhotos: usersWithPhotos,
+            usersWithHasPhotosFlag: usersWithPhotoFlag,
+            validForMatching: validUsers,
+            currentUserId: currentUser?.uid?.slice(0,8) || 'none'
+          });
+          
+          console.log(`✅ Loaded ${allUsers.length} users for matching`);
+          
+          // Shuffle the array for variety
+          for (let i = allUsers.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [allUsers[i], allUsers[j]] = [allUsers[j], allUsers[i]];
+          }
+
+        } catch (error) {
+          console.error('❌ Error loading users:', error);
+        }
+      }
+
+      /* ===== SECTION: Actions ===== */
+      async function passUser() {
+        const currentUserData = getCurrentDisplayedUser();
+        if (!currentUserData || !currentUser) return;
+
+        try {
+          // Visual feedback
+          passIndicator.style.opacity = '1';
+          setTimeout(() => passIndicator.style.opacity = '0', 300);
+
+          // Add to recycling bin
+          if (recyclingBin) {
+            recyclingBin.add(currentUserData, 'passed');
+            updateRecyclingBinButton();
+            console.log('♻️ Added to recycling bin:', currentUserData.displayName);
+          }
+
+          // Save the pass/view
+          await setDoc(doc(db, 'views', `${currentUser.uid}_${currentUserData.uid}`), {
+            from: currentUser.uid,
+            to: currentUserData.uid,
+            timestamp: serverTimestamp(),
+            action: 'pass'
+          });
+
+          console.log('👎 Passed:', currentUserData.displayName);
+          
+          setTimeout(() => {
+            loadAndDisplayNextUser();
+          }, 300);
+
+        } catch (error) {
+          console.error('❌ Error passing user:', error);
+          loadAndDisplayNextUser();
+        }
+      }
+
+      async function likeUser() {
+        const currentUserData = getCurrentDisplayedUser();
+        if (!currentUserData || !currentUser) return;
+
+        try {
+          // Visual feedback
+          likeIndicator.style.opacity = '1';
+          setTimeout(() => likeIndicator.style.opacity = '0', 300);
+
+          // Add to recycling bin
+          if (recyclingBin) {
+            recyclingBin.add(currentUserData, 'liked');
+            updateRecyclingBinButton();
+            console.log('♻️ Added to recycling bin:', currentUserData.displayName);
+          }
+
+          // Save the like
+          await setDoc(doc(db, 'likes', `${currentUser.uid}_${currentUserData.uid}`), {
+            from: currentUser.uid,
+            to: currentUserData.uid,
+            timestamp: serverTimestamp(),
+            action: 'like'
+          });
+
+          console.log('❤️ Liked:', currentUserData.displayName);
+
+          // Check for mutual match
+          const mutualLikeDoc = await getDoc(doc(db, 'likes', `${currentUserData.uid}_${currentUser.uid}`));
+          if (mutualLikeDoc.exists()) {
+            // It's a match!
+            await setDoc(doc(db, 'matches', `${currentUser.uid}_${currentUserData.uid}`), {
+              user1: currentUser.uid,
+              user2: currentUserData.uid,
+              timestamp: serverTimestamp()
+            });
+            
+            console.log('🎉 It\'s a match!');
+            alert('🎉 It\'s a match!');
+          }
+          
+          setTimeout(() => {
+            loadAndDisplayNextUser();
+          }, 300);
+
+        } catch (error) {
+          console.error('❌ Error liking user:', error);
+          loadAndDisplayNextUser();
+        }
+      }
+
+      function getCurrentDisplayedUser() {
+        if (emptyEl.style.display === 'flex') return null;
+        
+        const displayedName = nameEl.textContent;
+        const displayedHandle = handleEl.textContent;
+        
+        return allUsers.find(user => {
+          const userName = user.displayName || 'Anonymous';
+          const userHandle = user.username ? `@${user.username}` : '';
+          return userName === displayedName && userHandle === displayedHandle;
+        });
+      }
+
+      /* ===== SECTION: Inbox Functionality ===== */
+      async function showInbox() {
+        if (!currentUser) return;
+
+        const modal = document.getElementById('inboxModal');
+        modal.style.display = 'flex';
+
+        // Load initial tab (likes)
+        await loadInboxTab('likes');
+      }
+
+      function hideInbox() {
+        document.getElementById('inboxModal').style.display = 'none';
+      }
+
+      async function loadInboxTab(tab) {
+        if (!currentUser) return;
+
+        const inboxList = document.getElementById('inboxList');
+        const tabs = document.querySelectorAll('.inbox-tab');
+        
+        // Update active tab
+        tabs.forEach(t => t.classList.remove('active'));
+        document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+        try {
+          let querySnapshot;
+          
+          switch (tab) {
+            case 'likes':
+              querySnapshot = await getDocs(query(
+                collection(db, 'likes'),
+                where('to', '==', currentUser.uid)
+              ));
+              break;
+            case 'views':
+              querySnapshot = await getDocs(query(
+                collection(db, 'views'),
+                where('to', '==', currentUser.uid)
+              ));
+              break;
+            case 'matches':
+              querySnapshot = await getDocs(query(
+                collection(db, 'matches'),
+                where('user1', '==', currentUser.uid)
+              ));
+              const querySnapshot2 = await getDocs(query(
+                collection(db, 'matches'),
+                where('user2', '==', currentUser.uid)
+              ));
+              break;
+            case 'messages':
+              // TODO: Implement messages
+              inboxList.innerHTML = '<div style="padding: 20px; text-align: center; color: #ccc;">Messages coming soon!</div>';
+              return;
+          }
+
+          const userIds = new Set();
+          querySnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.from && data.from !== currentUser.uid) {
+              userIds.add(data.from);
+            }
+          });
+
+          if (tab === 'matches' && querySnapshot2) {
+            querySnapshot2.forEach(doc => {
+              const data = doc.data();
+              const otherUserId = data.user1 === currentUser.uid ? data.user2 : data.user1;
+              userIds.add(otherUserId);
+            });
+          }
+
+          // Load user details
+          const users = [];
+          for (const uid of userIds) {
+            try {
+              const userDoc = await getDoc(doc(db, 'users', uid));
+              if (userDoc.exists()) {
+                users.push(userDoc.data());
+              }
+            } catch (error) {
+              console.error('Error loading user:', uid, error);
+            }
+          }
+
+          // Display users
+          inboxList.innerHTML = '';
+          if (users.length === 0) {
+            inboxList.innerHTML = `<div style="padding: 20px; text-align: center; color: #ccc;">No ${tab} yet</div>`;
+            return;
+          }
+
+          users.forEach(user => {
+            const item = document.createElement('div');
+            item.className = 'inbox-item';
+            
+            const photoUrl = safePrimaryPhoto(user);
+            const displayName = user.displayName || 'Anonymous';
+            const ageText = user.age ? `, ${user.age}` : '';
+            
+            item.innerHTML = `
+              <img src="${photoUrl}" alt="${displayName}" />
+              <div class="inbox-meta">
+                <div class="inbox-name">${displayName}</div>
+                <div class="inbox-sub">${user.location || 'Unknown location'}${ageText}</div>
+              </div>
+            `;
+            
+            item.addEventListener('click', () => {
+              showPublicProfile(user);
+            });
+            
+            inboxList.appendChild(item);
+          });
+
+        } catch (error) {
+          console.error('Error loading inbox:', error);
+          inboxList.innerHTML = '<div style="padding: 20px; text-align: center; color: #ff6b6b;">Error loading data</div>';
+        }
+      }
+
+      /* ===== SECTION: Profile Editing ===== */
+      async function showEditModal() {
+        if (!currentUser) return;
+
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          const userData = userDoc.exists() ? userDoc.data() : {};
+
+          // Populate form
+          document.getElementById('uidLine').textContent = `UID: ${currentUser.uid}`;
+          document.getElementById('displayName').value = userData.displayName || '';
+          document.getElementById('username').value = userData.username || '';
+          document.getElementById('age').value = userData.age || '';
+          document.getElementById('location').value = userData.location || '';
+          document.getElementById('gender').value = userData.gender || '';
+          document.getElementById('hobbies').value = userData.hobbies || '';
+          document.getElementById('interests').value = userData.interests || '';
+          document.getElementById('bio').value = userData.bio || '';
+
+          // Load saved photos
+          await loadSavedPhotos();
+
+          document.getElementById('editModal').style.display = 'flex';
+
+        } catch (error) {
+          console.error('Error loading profile:', error);
+        }
+      }
+
+      function hideEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+        document.getElementById('previewGallery').innerHTML = '';
+        document.getElementById('previewGallery').hidden = true;
+        document.getElementById('previewTitle').hidden = true;
+      }
+
+      async function saveProfile() {
+        if (!currentUser) return;
+
+        try {
+          const displayName = document.getElementById('displayName').value.trim();
+          const username = document.getElementById('username').value.trim();
+          const age = parseInt(document.getElementById('age').value) || null;
+          const location = document.getElementById('location').value.trim();
+          const gender = document.getElementById('gender').value;
+          const hobbies = document.getElementById('hobbies').value.trim();
+          const interests = document.getElementById('interests').value.trim();
+          const bio = document.getElementById('bio').value.trim();
+
+          // Validation
+          let hasError = false;
+          
+          if (REQUIRED.DISPLAY_NAME && !displayName) {
+            document.getElementById('reqDisplayName').hidden = false;
+            document.getElementById('displayName').classList.add('invalid');
+            hasError = true;
+          } else {
+            document.getElementById('reqDisplayName').hidden = true;
+            document.getElementById('displayName').classList.remove('invalid');
+          }
+
+          if (REQUIRED.AGE && (!age || age < 18)) {
+            document.getElementById('reqAge').hidden = false;
+            document.getElementById('age').classList.add('invalid');
+            hasError = true;
+          } else {
+            document.getElementById('reqAge').hidden = true;
+            document.getElementById('age').classList.remove('invalid');
+          }
+
+          if (REQUIRED.LOCATION && !location) {
+            document.getElementById('reqLocation').hidden = false;
+            document.getElementById('location').classList.add('invalid');
+            hasError = true;
+          } else {
+            document.getElementById('reqLocation').hidden = true;
+            document.getElementById('location').classList.remove('invalid');
+          }
+
+          if (hasError) {
+            document.getElementById('uploadStatus').innerHTML = '<div class="err">Please fix the required fields above.</div>';
+            return;
+          }
+
+          // Upload new photos first
+          const fileInput = document.getElementById('avatar');
+          const files = fileInput.files;
+          const newPhotoUrls = [];
+
+          if (files.length > 0) {
+            document.getElementById('uploadStatus').innerHTML = '<div class="prog">Uploading photos...</div>';
+            
+            for (let i = 0; i < files.length; i++) {
+              try {
+                const file = files[i];
+                const fileName = `${Date.now()}_${i}`;
+                const storageRef = sRef(storage, `profilePhotos/${currentUser.uid}/${fileName}`);
+                
+                await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(storageRef);
+                newPhotoUrls.push(downloadURL);
+              } catch (error) {
+                console.error('Error uploading photo:', error);
+              }
+            }
+          }
+
+          // Get existing photos
+          const currentUserDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          const currentData = currentUserDoc.exists() ? currentUserDoc.data() : {};
+          const existingPhotos = currentData.photos || [];
+          const allPhotos = [...existingPhotos, ...newPhotoUrls];
+
+          // Update user document
+          const userData = {
+            uid: currentUser.uid,
+            displayName,
+            username: username || null,
+            age,
+            location,
+            gender: gender || null,
+            hobbies: hobbies || null,
+            interests: interests || null,
+            bio: bio || null,
+            photos: allPhotos,
+            hasPhotos: allPhotos.length > 0,
+            primaryPhoto: currentData.primaryPhoto || allPhotos[0] || null,
+            updatedAt: serverTimestamp()
+          };
+
+          await setDoc(doc(db, 'users', currentUser.uid), userData, { merge: true });
+
+          // Update auth profile
+          if (displayName !== currentUser.displayName) {
+            await updateProfile(currentUser, { displayName });
+          }
+
+          document.getElementById('uploadStatus').innerHTML = '<div class="ok">Profile saved successfully!</div>';
+          
+          setTimeout(() => {
+            hideEditModal();
+            location.reload(); // Refresh to show updated profile
+          }, 1500);
+
+        } catch (error) {
+          console.error('Error saving profile:', error);
+          document.getElementById('uploadStatus').innerHTML = '<div class="err">Error saving profile. Please try again.</div>';
+        }
+      }
+
+      async function loadSavedPhotos() {
+        if (!currentUser) return;
+
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          const userData = userDoc.exists() ? userDoc.data() : {};
+          const photos = userData.photos || [];
+          const primaryPhoto = userData.primaryPhoto;
+
+          const gallery = document.getElementById('gallery');
+          gallery.innerHTML = '';
+
+          photos.forEach((photoUrl, index) => {
+            const thumb = document.createElement('div');
+            thumb.className = 'thumb';
+            if (photoUrl === primaryPhoto) {
+              thumb.classList.add('primary');
+            }
+
+            thumb.innerHTML = `
+              <img src="${photoUrl}" alt="Photo ${index + 1}" />
+              <div class="label-pill">${photoUrl === primaryPhoto ? 'Primary' : index + 1}</div>
+            `;
+
+            thumb.addEventListener('click', async () => {
+              try {
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                  primaryPhoto: photoUrl
+                }, { merge: true });
+
+                // Update UI
+                document.querySelectorAll('#gallery .thumb').forEach(t => t.classList.remove('primary'));
+                thumb.classList.add('primary');
+                
+                // Update labels
+                document.querySelectorAll('#gallery .label-pill').forEach((label, i) => {
+                  label.textContent = i + 1;
+                });
+                thumb.querySelector('.label-pill').textContent = 'Primary';
+
+              } catch (error) {
+                console.error('Error setting primary photo:', error);
+              }
+            });
+
+            gallery.appendChild(thumb);
+          });
+
+        } catch (error) {
+          console.error('Error loading saved photos:', error);
+        }
+      }
+
+      // Preview selected files
+      document.getElementById('avatar').addEventListener('change', (e) => {
+        const files = e.target.files;
+        const previewGallery = document.getElementById('previewGallery');
+        const previewTitle = document.getElementById('previewTitle');
+
+        if (files.length === 0) {
+          previewGallery.hidden = true;
+          previewTitle.hidden = true;
+          return;
+        }
+
+        previewTitle.hidden = false;
+        previewGallery.hidden = false;
+        previewGallery.innerHTML = '';
+
+        Array.from(files).forEach((file, index) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const thumb = document.createElement('div');
+            thumb.className = 'thumb';
+            thumb.innerHTML = `
+              <img src="${e.target.result}" alt="Preview ${index + 1}" />
+              <div class="label-pill">Preview ${index + 1}</div>
+            `;
+            previewGallery.appendChild(thumb);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      /* ===== SECTION: Authentication & Initialization ===== */
+      /* ===== SECTION: Recycling Functionality ===== */
+      function initializeRecyclingBin() {
+        if (!currentUser) return;
+        
+        recyclingBin = new RecyclingBin(() => currentUser?.uid);
+        console.log('♻️ Recycling bin initialized for user:', currentUser.uid);
+        
+        // Update recycling bin button with count
+        updateRecyclingBinButton();
+      }
+
+      function updateRecyclingBinButton() {
+        if (!recyclingBin) return;
+        
+        const count = recyclingBin.list().length;
+        const btn = document.getElementById('recyclingBinBtn');
+        
+        if (btn) {
+          btn.textContent = count > 0 ? `♻️ Recycling Bin (${count})` : '♻️ Recycling Bin';
+          btn.title = `View your recycled profiles (${count} available)`;
+          if (count > 0) {
+            btn.style.opacity = '1';
+          } else {
+            btn.style.opacity = '0.5';
+          }
+        }
+      }
+
+      function showRecyclingBin() {
+        if (!recyclingBin) return;
+        
+        const modal = document.getElementById('recyclingBinModal');
+        const recycledProfiles = recyclingBin.list();
+        
+        console.log('♻️ Opening recycling bin with', recycledProfiles.length, 'profiles');
+        
+        // Update count display
+        const countEl = document.getElementById('recyclingBinCount');
+        countEl.textContent = recycledProfiles.length > 0 
+          ? `${recycledProfiles.length} recycled profiles` 
+          : 'No profiles in recycling bin yet';
+        
+        // Display recycled profiles
+        const listEl = document.getElementById('recyclingBinList');
+        listEl.innerHTML = '';
+        
+        if (recycledProfiles.length === 0) {
+          listEl.innerHTML = '<div style="padding: 40px; text-align: center; color: #ccc;">No recycled profiles yet.<br>Like or pass some profiles to see them here!</div>';
+        } else {
+          recycledProfiles.forEach((profile, index) => {
+            const item = document.createElement('div');
+            item.className = 'inbox-item';
+            
+            const photoUrl = safePrimaryPhoto(profile);
+            const displayName = profile.displayName || 'Anonymous';
+            const ageText = profile.age ? `, ${profile.age}` : '';
+            const actionText = profile.action === 'liked' ? '❤️ Liked' : '👎 Passed';
+            const timeAgo = profile.recycledAt ? new Date(profile.recycledAt).toLocaleDateString() : 'Unknown';
+            
+            item.innerHTML = `
+              <img src="${photoUrl}" alt="${displayName}" />
+              <div class="inbox-meta">
+                <div class="inbox-name">${displayName}</div>
+                <div class="inbox-sub">${profile.location || 'Unknown location'}${ageText}</div>
+                <div style="font-size: 0.8rem; color: #888; margin-top: 4px;">${actionText} • ${timeAgo}</div>
+              </div>
+            `;
+            
+            item.addEventListener('click', () => {
+              showPublicProfile(profile);
+            });
+            
+            listEl.appendChild(item);
+          });
+        }
+        
+        modal.style.display = 'flex';
+      }
+
+      function hideRecyclingBin() {
+        document.getElementById('recyclingBinModal').style.display = 'none';
+      }
+      
+      function clearRecyclingBin() {
+        if (!recyclingBin) return;
+        
+        const confirmClear = confirm('Are you sure you want to clear all recycled profiles? This cannot be undone.');
+        if (!confirmClear) return;
+        
+        recyclingBin.clear();
+        console.log('♻️ Recycling bin cleared');
+        
+        // Update the display
+        updateRecyclingBinButton();
+        
+        // Refresh the modal if it's open
+        const modal = document.getElementById('recyclingBinModal');
+        if (modal.style.display === 'flex') {
+          showRecyclingBin();
+        }
+      }
+
+
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          currentUser = user;
+          console.log('✅ User authenticated:', user.displayName || user.uid);
+          
+          topLine.textContent = `Welcome ${user.displayName || 'User'}`;
+          
+          // Initialize recycling bin
+          initializeRecyclingBin();
+          
+          // Load first user to display
+          await loadAndDisplayNextUser();
+          
+        } else {
+          console.log('🔒 No user authenticated');
+          topLine.textContent = 'Please log in';
+          
+          // Redirect to login after a delay
+          setTimeout(() => {
+            window.location.href = '/login.html';
+          }, 2000);
+        }
+      });
+
+      /* ===== SECTION: Event Listeners ===== */
+      
+      // Action buttons
+      passBtn?.addEventListener('click', passUser);
+      likeBtn?.addEventListener('click', likeUser);
+      recyclingBinBtn?.addEventListener('click', showRecyclingBin);
+      
+      // Navigation buttons
+      editBtn?.addEventListener('click', showEditModal);
+      inboxBtn?.addEventListener('click', showInbox);
+      filterBtn?.addEventListener('click', showFilterModal);
+      
+      // Modal close buttons
+      document.getElementById('cancelEdit')?.addEventListener('click', hideEditModal);
+      document.getElementById('saveEdit')?.addEventListener('click', saveProfile);
+      document.getElementById('closeInbox')?.addEventListener('click', hideInbox);
+      document.getElementById('cancelFilter')?.addEventListener('click', hideFilterModal);
+      document.getElementById('applyFilter')?.addEventListener('click', applyFilters);
+      document.getElementById('closeRecyclingBin')?.addEventListener('click', hideRecyclingBin);
+      document.getElementById('clearRecyclingBin')?.addEventListener('click', clearRecyclingBin);
+
+      // Inbox tabs - ensure they're properly wired
+      document.querySelectorAll('.inbox-tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('📥 Inbox tab clicked:', tab.dataset.tab);
+          const tabName = tab.dataset.tab;
+          loadInboxTab(tabName);
+        });
+      });
+
+      // Click on main photo to show profile
+      mainPhoto?.addEventListener('click', () => {
+        const currentUserData = getCurrentDisplayedUser();
+        if (currentUserData) {
+          showPublicProfile(currentUserData);
+        }
+      });
+
+      // Browse matches button
+      browseBtn?.addEventListener('click', () => {
+        loadAndDisplayNextUser();
+      });
+
+      // Logout button
+      logoutBtn?.addEventListener('click', async () => {
+        try {
+          await signOut(auth);
+          window.location.href = '/login.html';
+        } catch (error) {
+          console.error('Error signing out:', error);
+        }
+      });
+
+      // Delete account button
+      deleteBtn?.addEventListener('click', async () => {
+        if (!currentUser) return;
+        
+        const confirmDelete = confirm('Are you sure you want to delete your account? This action cannot be undone.');
+        if (!confirmDelete) return;
+
+        const password = prompt('Please enter your password to confirm account deletion:');
+        if (!password) return;
+
+        try {
+          // Re-authenticate user before deletion
+          const credential = EmailAuthProvider.credential(currentUser.email, password);
+          await reauthenticateWithCredential(currentUser, credential);
+
+          // Delete user document
+          await deleteDoc(doc(db, 'users', currentUser.uid));
+
+          // Delete auth account
+          await deleteUser(currentUser);
+
+          alert('Account deleted successfully.');
+          window.location.href = '/login.html';
+
+        } catch (error) {
+          console.error('Error deleting account:', error);
+          showCustomModal('Deletion Error', 'Error deleting account. Please check your password and try again.', 'error');
+        }
+      });
+
+      // Casualties button functionality
+      casualtiesBtn?.addEventListener('click', () => {
+        casualtiesModal.style.display = 'flex';
+      });
+
+      document.getElementById('closeCasualties')?.addEventListener('click', () => {
+        casualtiesModal.style.display = 'none';
+      });
+
+      document.getElementById('casualtiesCheckBtn')?.addEventListener('click', () => {
+        const password = document.getElementById('casualtiesPassword').value;
+        if (password === 'unhinged2024') {
+          document.getElementById('casualtiesPwdSection').style.display = 'none';
+          document.getElementById('casualtiesUploadSection').style.display = 'block';
+        } else {
+          showCustomModal('Incorrect Password', 'Please enter the correct password.', 'error');
+        }
+      });
+
+      document.getElementById('casualtiesSubmit')?.addEventListener('click', async () => {
+        const fileInput = document.getElementById('casualtiesFile');
+        const caption = document.getElementById('casualtiesCaption').value;
+        
+        if (!fileInput.files[0]) {
+          showCustomModal('Missing Image', 'Please select an image file to upload.', 'warning');
+          return;
+        }
+
+        try {
+          const file = fileInput.files[0];
+          const fileName = `${Date.now()}_${currentUser.uid}`;
+          const storageRef = sRef(storage, `casualties/${fileName}`);
+          
+          await uploadBytes(storageRef, file);
+          const downloadURL = await getDownloadURL(storageRef);
+
+          await addDoc(collection(db, 'casualties'), {
+            imageUrl: downloadURL,
+            caption: caption || '',
+            uploadedBy: currentUser.uid,
+            uploaderName: currentUser.displayName || 'Anonymous',
+            timestamp: serverTimestamp()
+          });
+
+          showCustomModal('Success', 'Casualty uploaded successfully!', 'success');
+          casualtiesModal.style.display = 'none';
+          document.getElementById('casualtiesPassword').value = '';
+          document.getElementById('casualtiesCaption').value = '';
+          fileInput.value = '';
+          document.getElementById('casualtiesPwdSection').style.display = 'block';
+          document.getElementById('casualtiesUploadSection').style.display = 'none';
+
+        } catch (error) {
+          console.error('Error uploading casualty:', error);
+          showCustomModal('Upload Error', 'Error uploading. Please try again.', 'error');
+        }
+      });
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        if (document.querySelector('.modal-backdrop[style*="flex"]') || 
+            document.querySelector('.inbox-modal[style*="flex"]') ||
+            document.querySelector('.chat-modal[style*="flex"]')) {
+          return; // Don't handle shortcuts when modals are open
+        }
+
+        switch (e.key) {
+          case 'ArrowLeft':
+            passUser();
+            break;
+          case 'ArrowRight':
+            likeUser();
+            break;
+          case ' ':
+            e.preventDefault();
+            loadAndDisplayNextUser();
+            break;
+        }
+      });
+
+      // Close modals when clicking backdrop
+      document.querySelectorAll('.modal-backdrop, .inbox-modal, .chat-modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            modal.style.display = 'none';
+          }
+        });
+      });
+
+      console.log('🔥 Unhinged Profile Matching System Loaded');
+    </script>
+    </div>
+  </body>
 </html>
