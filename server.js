@@ -151,10 +151,14 @@ app.use((req, res, next) => {
   }
 });
 
-// SPA routing only for non-file routes
-// Note: Static files (HTML, CSS, JS) are served by express.static middleware above
-// This catch-all only handles routes that don't correspond to actual files
+// SPA routing ONLY for app routes that don't exist as files (prevents bouncing)
+// Exclude root path to prevent conflict with login.html serving
 app.get('*', (req, res, next) => {
+  // Skip root path - it's handled by the specific route above
+  if (req.path === '/') {
+    return next();
+  }
+  
   // Check if the requested path corresponds to an actual file in public directory
   const filePath = path.join(__dirname, 'public', req.path);
   fs.access(filePath, fs.constants.F_OK, (err) => {
@@ -162,9 +166,7 @@ app.get('*', (req, res, next) => {
       // File exists, let static middleware handle it
       next();
     } else {
-      // File doesn't exist, Firebase handles authentication client-side
-      
-      // Serve app.html for SPA routing
+      // File doesn't exist - serve app.html for SPA routing
       res.sendFile(path.join(__dirname, 'public', 'app.html'));
     }
   });
