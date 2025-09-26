@@ -1,0 +1,61 @@
+/* Shared World Navigation Styles */
+.top-navigation {
+  background: linear-gradient(135deg, #1a1b22 0%, #0a0a13 100%);
+  border-bottom: 2px solid #E11D2A;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+}
+
+.nav-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.nav-btn {
+  background: linear-gradient(135deg, #2a2c39 0%, #16161c 100%);
+  color: #fff;
+  text-decoration: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #333;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: fit-content;
+  text-align: center;
+}
+
+.nav-btn:hover {
+  background: linear-gradient(135deg, #E11D2A 0%, #ff6b00 100%);
+  border-color: #E11D2A;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(225, 29, 42, 0.3);
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #E11D2A 0%, #ff6b00 100%);
+  border-color: #ff6b00;
+  box-shadow: 0 3px 12px rgba(225, 29, 42, 0.4);
+}
+
+/* Mobile responsive navigation */
+@media (max-width: 768px) {
+  .nav-buttons {
+    gap: 0.3rem;
+  }
+  
+  .nav-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+}
