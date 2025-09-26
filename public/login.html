@@ -133,29 +133,17 @@
   <!-- ===== SECTION: Scripts ===== -->
   <script type="module">
     /* ===== SECTION: Imports ===== */
-    // Firebase imports directly from CDN (consistent with profile.html)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    // Use shared Firebase configuration from firebase.js
     import { 
-      getAuth,
-      onAuthStateChanged,
+      auth,
       signInWithEmailAndPassword,
       sendPasswordResetEmail,
       signOut
+    } from "./js/firebase.js";
+    
+    import {
+      onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-    // Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyA6a_IRzGyBF_XEG1NuYbfLyUNx8mP3H4o",
-      authDomain: "unhinged-app-f97fd.firebaseapp.com", 
-      projectId: "unhinged-app-f97fd",
-      storageBucket: "unhinged-app-f97fd.appspot.com",
-      messagingSenderId: "1012345678901",
-      appId: "1:1012345678901:web:abcdefghijklmnop123456"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
 
     /* ===== SECTION: DOM Refs ===== */
     const form = document.getElementById("loginForm");
