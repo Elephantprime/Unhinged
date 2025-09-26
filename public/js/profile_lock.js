@@ -1,76 +1,71 @@
-// Profile completion and access control utilities
-// Production-ready lightweight implementation
+// Profile Lock Utilities - lightweight version
+// Only disables/enables Save button on edit-profile.html
+
+import { auth, db, doc, getDoc } from "/js/firebase.js";
 
 /**
- * Check if a profile is complete enough to use the matching system
- * @param {Object} user - User object from Firebase
- * @returns {boolean} - True if profile is complete
+ * Check if a profile is complete enough to enable Save
  */
-export function isProfileComplete(user) {
-    if (!user) return false;
-    
-    // Basic requirements for a complete profile
-    const hasDisplayName = user.displayName && user.displayName.trim().length > 0;
-    const hasAge = user.age && user.age > 0;
-    
-    console.log('📋 Profile completion check:', {
-        uid: user.uid?.substring(0, 8),
-        hasDisplayName,
-        hasAge,
-        complete: hasDisplayName && hasAge
-    });
-    
-    return hasDisplayName && hasAge;
+function isProfileComplete(data) {
+  if (!data) return false;
+
+  const hasDisplayName = data.displayName && data.displayName.trim().length > 0;
+  const hasAge = data.age && data.age > 0;
+  const hasLocation = data.location && data.location.trim().length > 0;
+  const hasPhotos = Array.isArray(data.photos) && data.photos.length > 0;
+
+  return hasDisplayName && hasAge && hasLocation && hasPhotos;
 }
 
 /**
- * Initialize profile completion gate
- * @param {Object} user - Current user object
- * @param {Function} onComplete - Callback when profile setup is complete
- * @param {Function} onIncomplete - Callback when profile needs completion
+ * Watch the form and disable/enable Save button
  */
-export function initProfileGate(user, onComplete, onIncomplete) {
-    console.log('🚪 Initializing profile gate for user:', user?.uid?.substring(0, 8));
-    
-    if (isProfileComplete(user)) {
-        console.log('✅ Profile complete - allowing access');
-        if (onComplete) onComplete();
+export function initProfileLock() {
+  const saveBtn = document.getElementById("saveEdit");
+  if (!saveBtn) {
+    console.warn("⚠️ Save button not found on this page");
+    return;
+  }
+
+  const inputs = [
+    "displayName",
+    "age",
+    "location",
+    "avatar", // photo input
+  ];
+
+  function checkForm() {
+    const data = {
+      displayName: document.getElementById("displayName")?.value || "",
+      age: parseInt(document.getElementById("age")?.value) || 0,
+      location: document.getElementById("location")?.value || "",
+      photos: document.getElementById("avatar")?.files?.length
+        ? ["has-photo"]
+        : [],
+    };
+
+    if (isProfileComplete(data)) {
+      saveBtn.disabled = false;
+      saveBtn.style.opacity = "1";
+      saveBtn.style.cursor = "pointer";
     } else {
-        console.log('⚠️ Profile incomplete - redirecting to setup');
-        if (onIncomplete) {
-            onIncomplete();
-        } else {
-            // Default action: redirect to profile setup
-            window.location.href = '/profile-clean.html?setup=true';
-        }
+      saveBtn.disabled = true;
+      saveBtn.style.opacity = "0.5";
+      saveBtn.style.cursor = "not-allowed";
     }
-}
+  }
 
-/**
- * Show profile completion status
- * @param {Object} user - User object
- * @returns {Object} - Status object with completion details
- */
-export function getProfileCompletionStatus(user) {
-    if (!user) return { complete: false, missing: ['user'], percentage: 0 };
-    
-    const checks = {
-        displayName: user.displayName && user.displayName.trim().length > 0,
-        age: user.age && user.age > 0,
-        photos: user.photos && user.photos.length > 0
-    };
-    
-    const completed = Object.values(checks).filter(Boolean).length;
-    const total = Object.keys(checks).length;
-    const percentage = Math.round((completed / total) * 100);
-    const missing = Object.keys(checks).filter(key => !checks[key]);
-    
-    return {
-        complete: completed === total,
-        percentage,
-        missing,
-        checks
-    };
-}
+  // Run initial check
+  checkForm();
 
-console.log('✅ Profile lock utilities loaded');
+  // Watch for changes in required inputs
+  inputs.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input", checkForm);
+      el.addEventListener("change", checkForm);
+    }
+  });
+
+  console.log("🔒 Profile lock active: Save button controlled by profile completeness");
+}
