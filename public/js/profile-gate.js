@@ -3,10 +3,28 @@ import { auth, db } from "/js/firebase.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-/* ---- Profile completeness check - DISABLED FOR BUTTON TESTING ---- */
+/* ---- Profile completeness check ---- */
 function isComplete(d) {
-  console.log('🔓 PROFILE GATE DISABLED - All profiles considered complete for button testing');
-  return true; // ALWAYS return true to disable profile blocking
+  if (!d) return false;
+  
+  // Required fields for profile completion
+  const hasDisplayName = d.displayName && d.displayName.trim();
+  const hasAge = d.age && d.age >= 18;
+  const hasLocation = d.location && d.location.trim();
+  const hasPhotos = d.hasPhotos || (Array.isArray(d.photos) && d.photos.length > 0) || d.photoURL;
+  
+  const isComplete = hasDisplayName && hasAge && hasLocation && hasPhotos;
+  
+  console.log('📋 Profile completion check:', {
+    uid: d.uid?.slice(0, 8) || 'no-uid',
+    hasDisplayName: !!hasDisplayName,
+    hasAge: !!hasAge,
+    hasLocation: !!hasLocation, 
+    hasPhotos: !!hasPhotos,
+    complete: isComplete
+  });
+  
+  return isComplete;
 }
 
 /* ---- Get current form data ---- */
@@ -41,17 +59,13 @@ function getFormData() {
 /* ---- Get missing fields for user feedback ---- */
 function getMissingFields(d) {
   const missing = [];
-  if (!d) return ['Display Name', 'Age (18+)', 'Gender', 'Bio', 'Location', 'Profile Photo', 'Hobbies', 'Interests'];
+  if (!d) return ['Display Name', 'Age (18+)', 'Location', 'Profile Photo'];
   
-  // ALL fields are REQUIRED - must match isComplete() logic
+  // Core required fields only - must match isComplete() logic
   if (!d.displayName || !d.displayName.trim()) missing.push('Display Name');
   if (!d.age || d.age < 18) missing.push('Age (18+)');
-  if (!d.gender || !d.gender.trim()) missing.push('Gender');
-  if (!d.bio || !d.bio.trim()) missing.push('Bio');
   if (!d.location || !d.location.trim()) missing.push('Location');
-  if (!d.photoURL && (!Array.isArray(d.photos) || d.photos.length === 0)) missing.push('Profile Photo');
-  if (!Array.isArray(d.hobbies) || d.hobbies.length === 0) missing.push('Hobbies');
-  if (!Array.isArray(d.interests) || d.interests.length === 0) missing.push('Interests');
+  if (!d.hasPhotos && !d.photoURL && (!Array.isArray(d.photos) || d.photos.length === 0)) missing.push('Profile Photo');
   
   return missing;
 }
@@ -233,10 +247,7 @@ let profileLockState = {
 
 /* ---- Enhanced navigation blocking with bulletproof protection ---- */
 function installBlockers() {
-  // TEMPORARY DISABLE: Profile gate disabled for button testing
-  console.log('🧪 TESTING MODE: Profile gate temporarily disabled - all interactions allowed');
-  console.log('🔓 Navigation and button blocking is turned OFF for testing purposes');
-  return; // Exit early - no blocking installed
+  console.log('🔒 Profile gate ENABLED - installing navigation blockers');
   
   if (profileLockState.installed) return;
   profileLockState.installed = true;
@@ -580,6 +591,11 @@ function isAllowedPage() {
 
 /* ---- Core profile check function ---- */
 async function checkProfileCompletion(user, context = 'unknown') {
+  // Early exit if navigation already in progress
+  if (window.__navigating) {
+    console.log(`🔒 [${context}] Navigation in progress - skipping check`);
+    return false;
+  }
   if (!user) {
     console.log(`🔒 [${context}] No authenticated user - allowing navigation`);
     return true; // Let login logic handle this
@@ -649,8 +665,37 @@ async function immediatePageLoadCheck() {
 
 /* ---- Auth state change handler ---- */
 onAuthStateChanged(auth, async (user) => {
+  // Prevent multiple simultaneous auth state changes
+  if (window.__authChangePending) {
+    console.log('🔒 Auth change already in progress - skipping');
+    return;
+  }
+  window.__authChangePending = true;
+  
+  // Don't auto-redirect from profile.html - let users manage their profile
+  if (window.location.pathname.includes('/profile.html')) {
+    console.log('🔒 [AUTH_CHANGE] User on profile page - allowing profile management');
+    window.__authChangePending = false;
+    return;
+  }
+  
+  // SIMPLIFIED: Just set the cookie for authenticated users, no automatic redirects
+  if (user) {
+    // Set login cookie immediately for authenticated users with proper settings
+    document.cookie = 'login_ok=1; path=/; max-age=86400; SameSite=Lax'; // 24 hours
+    console.log('🍪 Login cookie set for authenticated user:', user.uid.slice(0, 8));
+    
+    // Mark session without triggering redirects
+    sessionStorage.setItem(`profile_visited_${user.uid}`, 'true');
+    console.log('✅ User authenticated and ready - manual navigation enabled');
+  }
+  
   await checkProfileCompletion(user, 'AUTH_CHANGE');
+  window.__authChangePending = false;
 });
+
+/* ---- Export necessary functions ---- */
+export { isComplete as isProfileComplete, checkProfileCompletion };
 
 /* ---- Run immediate check to prevent race conditions ---- */
 // This is CRITICAL - it catches users who are already authenticated
@@ -667,6 +712,17 @@ if (window.location.pathname.includes('/profile.html')) {
       console.log('⚠️ No authenticated user - redirecting to login');
       window.location.href = '/login.html';
       return;
+    }
+    
+    // CRITICAL: Mark that user has visited profile page in this session
+    // This allows them to navigate to app.html and other protected pages
+    if (user?.uid) {
+      sessionStorage.setItem(`profile_visited_${user.uid}`, 'true');
+      // CRITICAL: Set server-enforceable login cookie immediately  
+      document.cookie = 'login_ok=1; path=/; max-age=86400; SameSite=Lax'; // 24 hours
+      console.log('🍪 Setting login cookie on profile page visit');
+      console.log('✅ Profile page visit marked for user:', user.uid.slice(0, 8));
+      console.log('🍪 Login cookie set for server authentication');
     }
     
     try {
