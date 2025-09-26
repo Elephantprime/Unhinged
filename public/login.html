@@ -133,13 +133,29 @@
   <!-- ===== SECTION: Scripts ===== -->
   <script type="module">
     /* ===== SECTION: Imports ===== */
-    import { auth } from "./js/firebase.js";
-    import {
+    // Firebase imports directly from CDN (consistent with profile.html)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { 
+      getAuth,
       onAuthStateChanged,
       signInWithEmailAndPassword,
       sendPasswordResetEmail,
       signOut
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyA6a_IRzGyBF_XEG1NuYbfLyUNx8mP3H4o",
+      authDomain: "unhinged-app-f97fd.firebaseapp.com", 
+      projectId: "unhinged-app-f97fd",
+      storageBucket: "unhinged-app-f97fd.appspot.com",
+      messagingSenderId: "1012345678901",
+      appId: "1:1012345678901:web:abcdefghijklmnop123456"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
     /* ===== SECTION: DOM Refs ===== */
     const form = document.getElementById("loginForm");
@@ -244,13 +260,16 @@
         const user = userCredential.user;
         
         // User successfully logged in with Firebase Auth
+        // Mark that user has logged in through proper flow
+        sessionStorage.setItem(`logged_in_${user.uid}`, 'true');
         
-        show("ok", "Login successful! Redirecting to your profile...");
+        // Set server-enforceable login cookie
+        document.cookie = 'login_ok=1; path=/; max-age=86400'; // 24 hours
         
-        // Redirect to profile after successful login
-        setTimeout(() => {
-          window.location.href = './profile.html';
-        }, 1000);
+        show("ok", "Login successful! You can now manually navigate to your profile or app.");
+        
+        // NO AUTOMATIC REDIRECT - User chooses where to go
+        console.log('✅ Login successful - user can manually navigate to desired page');
       } catch (e) {
         show("err", errMap(e?.code));
       } finally {
