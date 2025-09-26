@@ -8,7 +8,7 @@
 // =====================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { 
   getFirestore, 
   doc, 
@@ -827,7 +827,7 @@ function showCustomModal(title, message, type = 'info') {
 // Admin Functions
 // =====================================================
 
-// SECURITY: Check if current user is admin using hardcoded UID
+// SECURITY: Check if current user is admin (you are the only admin)
 async function isCurrentUserAdmin() {
   const user = auth.currentUser;
   if (!user) {
@@ -835,19 +835,42 @@ async function isCurrentUserAdmin() {
     return false;
   }
   
-  // CRITICAL SECURITY: Only allow hardcoded admin UID
-  const ADMIN_UID = '3rOEe2tzu6cahiDBgmck7WIZ2nS2';
-  console.log('🔐 Admin check: Current UID:', user.uid, 'Admin UID:', ADMIN_UID);
-  
-  if (user.uid !== ADMIN_UID) {
-    console.log('🔐 Admin check: UID does not match admin UID');
+  try {
+    // SECURITY: First check if user document has admin flag
+    const userDoc = await getUserDoc(user.uid);
+    if (userDoc && userDoc.isAdmin === true) {
+      console.log('🔐 Admin check: SUCCESS - User has admin flag');
+      return true;
+    }
+    
+    // FALLBACK: Check if this is the known admin UID (you)
+    // This ensures you maintain admin access even if the flag isn't set
+    const KNOWN_ADMIN_UID = '3rOEe2tzu6cahiDBgmck7WIZ2nS2';
+    if (user.uid === KNOWN_ADMIN_UID) {
+      console.log('🔐 Admin check: SUCCESS - Known admin UID');
+      
+      // Set the admin flag in the user document for future use
+      if (userDoc) {
+        try {
+          await setDoc(userRef(user.uid), { 
+            isAdmin: true,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+          console.log('🔐 Admin flag set for future use');
+        } catch (error) {
+          console.log('🔐 Could not set admin flag:', error.message);
+        }
+      }
+      
+      return true;
+    }
+    
+    console.log('🔐 Admin check: User is not admin');
+    return false;
+  } catch (error) {
+    console.error('🔐 Admin check error:', error);
     return false;
   }
-  
-  // SECURITY: Hardcoded UID is sufficient for admin verification
-  // No need to check user document since only this specific UID has admin access
-  console.log('🔐 Admin check: SUCCESS - User is hardcoded admin');
-  return true;
 }
 
 // Clear all messages from a specific district chat
@@ -1104,6 +1127,43 @@ async function getAvailableDistricts() {
   return ['dating', 'memes', 'confessions', 'debates', 'toxic'];
 }
 
+// Function to temporarily clear profile completion for testing
+async function clearProfileCompletion(uid) {
+  try {
+    await setDoc(
+      userRef(uid),
+      { 
+        location: null,  // Clear location to make profile incomplete
+        updatedAt: serverTimestamp() 
+      },
+      { merge: true }
+    );
+    console.log('🔧 Profile completion cleared for testing - location removed');
+    return true;
+  } catch (error) {
+    console.error('❌ Error clearing profile completion:', error);
+    return false;
+  }
+}
+
+// Global function for testing profile gate (available in console)
+window.testProfileGate = async function() {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      console.log('❌ No authenticated user found');
+      return;
+    }
+    
+    console.log('🔧 Clearing profile completion for testing...');
+    await clearProfileCompletion(user.uid);
+    console.log('✅ Profile cleared! Refresh the page to test the profile gate flow.');
+    console.log('💡 Your location has been removed, so you\'ll need to complete your profile again.');
+  } catch (error) {
+    console.error('❌ Error:', error);
+  }
+};
+
 // =====================================================
 // Exports
 // =====================================================
@@ -1138,6 +1198,7 @@ export {
   getDownloadURL,
   onAuthStateChanged,
   updateProfile,
+  signOut,
   // App helpers
   waitForAuth,
   userRef,
@@ -1165,4 +1226,5 @@ export {
   clearLiveStreamChat,
   clearAllStagesChat,
   getAvailableDistricts,
+  clearProfileCompletion,
 };
