@@ -242,14 +242,6 @@
       step1.classList.toggle("active", n===1);
       step2.classList.toggle("active", n===2);
     }
-    document.getElementById("toStep2").addEventListener("click", ()=>{
-      const email = document.getElementById("email").value.trim();
-      const pwd = document.getElementById("password").value;
-      const s = document.getElementById("status1");
-      if(!email || !pwd){ s.innerHTML = "<span class='err'>Email and password are required.</span>"; return; }
-      s.textContent = "";
-      showStep(2);
-    });
     document.getElementById("back2").addEventListener("click", ()=> showStep(1));
 
     // ---- quiz helpers
@@ -290,20 +282,25 @@
       await setDoc(doc(db,"users",uid), payload, { merge:true });
     }
 
-    // ---- create account + save quiz
-    document.getElementById("create").addEventListener("click", async ()=>{
+    // Store user credentials globally for later use
+    let pendingUserCred = null;
+    let pendingEmail = null;
+    let pendingPassword = null;
+
+    // ---- create account (Step 1 -> Step 2)
+    document.getElementById("toStep2").addEventListener("click", async ()=>{
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
-      const s = document.getElementById("status2");
+      const s = document.getElementById("status1");
 
-      // completeness
-      const answers = getAnswers();
-      const missing = Object.values(answers).some(v => v===null);
-      if(missing){ s.innerHTML = "<span class='err'>Please answer all questions.</span>"; return; }
+      if(!email || !password){ 
+        s.innerHTML = "<span class='err'>Email and password are required.</span>"; 
+        return; 
+      }
 
       s.innerHTML = "<span class='prog'>Creating account…</span>";
       try{
-        // If user already exists but is logged out, sign-in instead of erroring
+        // Create account first
         let userCred;
         try{
           userCred = await createUserWithEmailAndPassword(auth, email, password);
@@ -315,15 +312,15 @@
           }
         }
 
-        // IMPORTANT: Add new user to authorized users list FIRST so they can save quiz data
-        await setDoc(doc(db, 'authorizedUsers', userCred.user.uid), {
-          email: email,
-          addedAt: serverTimestamp(),
-          addedBy: 'auto-signup',
-          method: 'self-registration'
-        });
+        // Store for later use
+        pendingUserCred = userCred;
+        pendingEmail = email;
+        pendingPassword = password;
 
-        // CRITICAL FIX: Create user document with required fields BEFORE saving quiz
+        // Set server-enforceable login cookie
+        document.cookie = 'login_ok=1; path=/; max-age=86400'; // 24 hours
+        
+        // Create basic user document
         await setDoc(doc(db, 'users', userCred.user.uid), {
           displayName: userCred.user.displayName || userCred.user.email.split('@')[0] || 'New User',
           email: email,
@@ -333,12 +330,34 @@
           updatedAt: serverTimestamp()
         });
 
+        s.innerHTML = "<span class='ok'>Account created! Now take the quiz...</span>";
+        showStep(2);
+      }catch(err){
+        const msg = err?.message || "Account creation failed.";
+        s.innerHTML = `<span class='err'>${msg}</span>`;
+      }
+    });
+
+    // ---- complete quiz and redirect to profile
+    document.getElementById("create").addEventListener("click", async ()=>{
+      const s = document.getElementById("status2");
+
+      // Check quiz completeness
+      const answers = getAnswers();
+      const missing = Object.values(answers).some(v => v===null);
+      if(missing){ s.innerHTML = "<span class='err'>Please answer all questions.</span>"; return; }
+
+      if(!pendingUserCred){ s.innerHTML = "<span class='err'>Account error. Please refresh and try again.</span>"; return; }
+
+      s.innerHTML = "<span class='prog'>Saving quiz results…</span>";
+      try{
+        // Save quiz results
         const flags = calculateFlags(answers);
-        await saveQuiz(userCred.user.uid, answers, flags);
+        await saveQuiz(pendingUserCred.user.uid, answers, flags);
 
         s.innerHTML = "<span class='ok'>Done! Redirecting to profile setup...</span>";
-        // Redirect to profile page with creation flag to auto-open edit modal
-        location.replace("./profile.html?create=true");
+        // NO AUTOMATIC REDIRECT - User can manually navigate to profile
+        console.log('✅ Account created successfully - user can manually navigate to profile');
       }catch(err){
         const msg = err?.message || "Signup failed.";
         s.innerHTML = `<span class='err'>${msg}</span>`;
