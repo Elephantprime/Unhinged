@@ -1,342 +1,197 @@
 rules_version = '2';
-
 service firebase.storage {
-
-  // Define complex checks as variables for cleaner use in 'allow' statements
-  // These top-level LET variables are correct because they do not depend on PATH SEGMENTS.
-  
-  // Basic signed-in check
-  let signedIn = request.auth != null;
-
-  // Full isAdmin check (inlining the logic from your original function)
-  let isAdminCheck = signedIn
-    && exists(/databases/(default)/documents/users/$(request.auth.uid))
-    && get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true;
-
-  // Full isModerator check (inlining the logic from your original function)
-  let isModeratorCheck = isAdminCheck || (
-    signedIn
-    && exists(/databases/(default)/documents/users/$(request.auth.uid))
-    && get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('isModerator', false) == true
-  );
-
-  // File type validation expressions (inlined from your original functions)
-  let validImageTypeCheck = request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp)');
-  let validMediaTypeCheck = request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp|heic|heif)');
-  let validDocumentTypeCheck = request.resource.contentType.matches('(image|video|audio|text|application)/(.*)|.*');
-  
-  // Helper function for private chat participant validation
-  // This function is required because the logic relies on a path segment (chatId) and must be defined globally.
-  function isPrivateChatParticipant(chatId) {
-    return signedIn && (
-      exists(/databases/(default)/documents/private_chats/$(chatId)) &&
-      request.auth.uid in get(/databases/(default)/documents/private_chats/$(chatId)).data.participants
-    );
-  }
-  
-  // All 'match' blocks must be nested within this main block.
   match /b/{bucket}/o {
 
-    /* ALL ORIGINAL FUNCTION DEFINITIONS HAVE BEEN REMOVED AND THEIR LOGIC INLINED. 
-      The 'function' keyword is invalid in Firebase Storage rules.
-    */
+    // ==== Helper Functions ====
+    function signedIn() {
+      return request.auth != null;
+    }
 
-    /* ===== USER UPLOADS - SCOPED TO USER ===== */
+    function validImageType() {
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp)');
+    }
+
+    function validMediaType() {
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp|heic|heif)');
+    }
+
+    function validDocumentType() {
+      return request.resource.contentType.matches('(image|video|audio|text|application)/(.*)|.*');
+    }
+
+    // ==== USER UPLOADS ====
     match /images/{userId}/{allPaths=**} {
-      // isOwner(userId) logic: signedIn && request.auth.uid == userId;
-
-      // allow read: if isOwner(userId);
-      allow read: if signedIn && request.auth.uid == userId; 
-
-      // allow write: if isOwner(userId) && validFileSize(10) && validProfileMediaType();
-      allow write: if (signedIn && request.auth.uid == userId)
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if signedIn()
+        && request.auth.uid == userId
         && request.resource.size <= 10 * 1024 * 1024
-        && validMediaTypeCheck; // Using validMediaTypeCheck (based on your profile function)
-
-      // allow delete: if isOwner(userId) || isAdmin();
-      allow delete: if (signedIn && request.auth.uid == userId) || isAdminCheck;
+        && validMediaType();
+      allow delete: if signedIn() && request.auth.uid == userId;
     }
-    
-    // Legacy avatar paths for backwards compatibility
+
+    // Legacy avatars
     match /avatars/{userId}/{allPaths=**} {
-      // isOwner(userId) logic: signedIn && request.auth.uid == userId;
-
-      allow read: if true; 
-
-      // allow write: if isOwner(userId) && validFileSize(10) && validProfileMediaType();
-      allow write: if (signedIn && request.auth.uid == userId)
+      allow read: if true;
+      allow write: if signedIn()
+        && request.auth.uid == userId
         && request.resource.size <= 10 * 1024 * 1024
-        && validMediaTypeCheck; 
-
-      // allow delete: if isOwner(userId) || isAdmin();
-      allow delete: if (signedIn && request.auth.uid == userId) || isAdminCheck;
+        && validMediaType();
+      allow delete: if signedIn() && request.auth.uid == userId;
     }
-    
-    /* ===== PUBLIC CONTENT COLLECTIONS ===== */
-    
-    // World Feed images and media
+
+    // ==== PUBLIC CONTENT COLLECTIONS ====
     match /world_feed/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if signedIn() && validFileSize(10) && validMediaType();
-      allow write: if signedIn 
+      allow read: if true;
+      allow write: if signedIn()
         && request.resource.size <= 10 * 1024 * 1024
-        && validMediaTypeCheck;
+        && validMediaType();
     }
-    
-    // Casualties community feed images  
+
     match /casualties/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if signedIn() && validFileSize(10) && validMediaType();
-      allow write: if signedIn 
+      allow read: if true;
+      allow write: if signedIn()
         && request.resource.size <= 10 * 1024 * 1024
-        && validMediaTypeCheck;
+        && validMediaType();
     }
-    
-    // Live stream thumbnails and media
+
     match /live_streams/{streamerUid}/{allPaths=**} {
-      // isOwner(streamerUid) logic: signedIn && request.auth.uid == streamerUid;
-      
-      allow read: if true; 
-      
-      // allow write: if isOwner(streamerUid) && validFileSize(50) && validMediaType();
-      allow write: if (signedIn && request.auth.uid == streamerUid)
-        && request.resource.size <= 50 * 1024 * 1024 
-        && validMediaTypeCheck;
+      allow read: if true;
+      allow write: if signedIn()
+        && request.auth.uid == streamerUid
+        && request.resource.size <= 50 * 1024 * 1024
+        && validMediaType();
     }
-    
-    // Spotlight system images
+
     match /spotlight/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if signedIn() && validFileSize(10) && validImageType();
-      allow write: if signedIn 
-        && request.resource.size <= 10 * 1024 * 1024 
-        && validImageTypeCheck;
+      allow read: if true;
+      allow write: if signedIn()
+        && request.resource.size <= 10 * 1024 * 1024
+        && validImageType();
     }
-    
-    /* ===== DISTRICT CONTENT ===== */
-    
-    // District memes and content (public but controlled)
+
+    // ==== DISTRICT CONTENT ====
     match /districts/{district}/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if signedIn() && validFileSize(10) && validMediaType();
-      allow write: if signedIn 
-        && request.resource.size <= 10 * 1024 * 1024 
-        && validMediaTypeCheck;
+      allow read: if true;
+      allow write: if signedIn()
+        && request.resource.size <= 10 * 1024 * 1024
+        && validMediaType();
     }
-    
-    // Anonymous confession images (no user identification in path)
+
     match /anonymous/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if signedIn() && validFileSize(5) && validImageType();
-      allow write: if signedIn 
-        && request.resource.size <= 5 * 1024 * 1024 
-        && validImageTypeCheck;
+      allow read: if true;
+      allow write: if signedIn()
+        && request.resource.size <= 5 * 1024 * 1024
+        && validImageType();
     }
-    
-    /* ===== STAGES SYSTEM MEDIA ===== */
-    
-    // Stage event media and assets
+
+    // ==== STAGES SYSTEM MEDIA ====
     match /stages_events/{eventId}/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if signedIn() && validFileSize(10) && validMediaType();
-      allow write: if signedIn 
-        && request.resource.size <= 10 * 1024 * 1024 
-        && validMediaTypeCheck;
+      allow read: if true;
+      allow write: if signedIn()
+        && request.resource.size <= 10 * 1024 * 1024
+        && validMediaType();
     }
-    
-    // SECURITY FIX: Stage backgrounds and assets - admin only
+
     match /stages_assets/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if isAdmin() && validFileSize(20) && validMediaType();
-      allow write: if isAdminCheck 
-        && request.resource.size <= 20 * 1024 * 1024 
-        && validMediaTypeCheck;
+      allow read: if true;
+      allow write: if false; // Only allow by default, can't check admin
     }
-    
-    /* ===== ARCADE SYSTEM MEDIA ===== */
-    
-    // Arcade meme contest submissions
+
+    // ==== ARCADE SYSTEM MEDIA ====
     match /arcade_memes/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if signedIn() && validFileSize(5) && validImageType();
-      allow write: if signedIn 
-        && request.resource.size <= 5 * 1024 * 1024 
-        && validImageTypeCheck;
+      allow read: if true;
+      allow write: if signedIn()
+        && request.resource.size <= 5 * 1024 * 1024
+        && validImageType();
     }
-    
-    // SECURITY FIX: Arcade game assets and media - admin only
+
     match /arcade_assets/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if isAdmin() && validFileSize(20) && validMediaType();
-      allow write: if isAdminCheck 
-        && request.resource.size <= 20 * 1024 * 1024 
-        && validMediaTypeCheck;
+      allow read: if true;
+      allow write: if false;
     }
-    
-    /* ===== LOUNGE SYSTEM MEDIA ===== */
-    
-    // SECURITY FIX: Lounge table backgrounds and assets - admin only
+
+    // ==== LOUNGE SYSTEM MEDIA ====
     match /lounge_assets/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if isAdmin() && validFileSize(20) && validMediaType();
-      allow write: if isAdminCheck 
-        && request.resource.size <= 20 * 1024 * 1024 
-        && validMediaTypeCheck;
+      allow read: if true;
+      allow write: if false;
     }
-    
-    // User-generated lounge content (avatars, etc.)
+
     match /lounge_media/{userId}/{allPaths=**} {
-      // isOwner(userId) logic: signedIn && request.auth.uid == userId;
-
-      allow read: if true; 
-      
-      // allow write: if isOwner(userId) && validFileSize(5) && validImageType();
-      allow write: if (signedIn && request.auth.uid == userId)
-        && request.resource.size <= 5 * 1024 * 1024 
-        && validImageTypeCheck;
+      allow read: if true;
+      allow write: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.size <= 5 * 1024 * 1024
+        && validImageType();
     }
-    
-    /* ===== CHAT AND MESSAGE MEDIA ===== */
-    
-    // Chat room media uploads
+
+    // ==== CHAT AND MESSAGE MEDIA ====
     match /chat_media/{roomId}/{userId}/{allPaths=**} {
-      // isOwner(userId) logic: signedIn && request.auth.uid == userId;
-      
-      allow read: if true; 
-      
-      // allow write: if isOwner(userId) && validFileSize(10) && validMediaType();
-      allow write: if (signedIn && request.auth.uid == userId)
-        && request.resource.size <= 10 * 1024 * 1024 
-        && validMediaTypeCheck;
+      allow read: if true;
+      allow write: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.size <= 10 * 1024 * 1024
+        && validMediaType();
     }
-    
-    // SECURITY FIX: Private chat media with secure participant validation
+
     match /private_media/{chatId}/{userId}/{allPaths=**} {
-      // isOwner(userId) logic: signedIn && request.auth.uid == userId;
-      
-      // isPrivateChatParticipant(chatId) is now called as a function.
-
-      // allow read: if isOwner(userId) || isPrivateChatParticipant(chatId);
-      allow read: if (signedIn && request.auth.uid == userId) || isPrivateChatParticipant(chatId);
-
-      // allow write: if isOwner(userId) && isPrivateChatParticipant(chatId) && validFileSize(10) && validMediaType();
-      allow write: if (signedIn && request.auth.uid == userId) && isPrivateChatParticipant(chatId)
-        && request.resource.size <= 10 * 1024 * 1024 
-        && validMediaTypeCheck;
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.size <= 10 * 1024 * 1024
+        && validMediaType();
     }
-    
-    /* ===== MODERATION AND ADMIN CONTENT ===== */
-    
-    // SECURITY FIX: Moderation evidence and screenshots - moderator/admin only
-    match /moderation/{allPaths=**} { // <-- THIS IS THE PREVIOUS PROBLEM AREA (Line 69 in your file)
-      // allow read: if isModerator();
-      allow read: if isModeratorCheck;
 
-      // allow write: if isModerator() && validFileSize(20) && validMediaType();
-      allow write: if isModeratorCheck 
-        && request.resource.size <= 20 * 1024 * 1024 
-        && validMediaTypeCheck;
+    // ==== MODERATION AND ADMIN CONTENT ====
+    match /moderation/{allPaths=**} {
+      allow read: if false;
+      allow write: if false;
     }
-    
-    // SECURITY FIX: System assets and configuration media - admin only
+
     match /system/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if isAdmin() && validFileSize(50) && validDocumentType();
-      allow write: if isAdminCheck 
-        && request.resource.size <= 50 * 1024 * 1024 
-        && validDocumentTypeCheck;
+      allow read: if false;
+      allow write: if false;
     }
-    
-    /* ===== APP ASSETS AND RESOURCES ===== */
-    
-    // SECURITY FIX: Static app assets - admin only
+
+    // ==== APP ASSETS AND RESOURCES ====
     match /app_assets/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if isAdmin() && validFileSize(20) && validMediaType();
-      allow write: if isAdminCheck 
-        && request.resource.size <= 20 * 1024 * 1024 
-        && validMediaTypeCheck;
+      allow read: if true;
+      allow write: if false;
     }
-    
-    // SECURITY FIX: Theme assets and customization media - admin only
+
     match /themes/{allPaths=**} {
-      allow read: if true; 
-      
-      // allow write: if isAdmin() && validFileSize(10) && validMediaType();
-      allow write: if isAdminCheck 
-        && request.resource.size <= 10 * 1024 * 1024 
-        && validMediaTypeCheck;
+      allow read: if true;
+      allow write: if false;
     }
-    
-    /* ===== TEMPORARY AND CACHE STORAGE ===== */
-    
-    // Temporary file uploads (processing, etc.)
+
+    // ==== TEMPORARY AND CACHE STORAGE ====
     match /temp/{userId}/{allPaths=**} {
-      // isOwner(userId) logic: signedIn && request.auth.uid == userId;
-
-      // allow read, write: if isOwner(userId) && validFileSize(50) && validDocumentType();
-      allow read, write: if (signedIn && request.auth.uid == userId)
-        && request.resource.size <= 50 * 1024 * 1024 
-        && validDocumentTypeCheck;
+      allow read, write: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.size <= 50 * 1024 * 1024
+        && validDocumentType();
     }
-    
-    // Cache storage for processed media - system only
+
     match /cache/{allPaths=**} {
-      allow read: if true; 
-      allow write: if false; 
+      allow read: if true;
+      allow write: if false;
     }
-    
-    /* ===== ANALYTICS AND REPORTING MEDIA ===== */
-    
-    // SECURITY FIX: Analytics screenshots and reports - admin only
+
+    // ==== ANALYTICS AND REPORTING MEDIA ====
     match /analytics/{allPaths=**} {
-      // allow read: if isAdmin();
-      allow read: if isAdminCheck;
-
-      // allow write: if isAdmin() && validFileSize(20) && validDocumentType();
-      allow write: if isAdminCheck 
-        && request.resource.size <= 20 * 1024 * 1024 
-        && validDocumentTypeCheck;
+      allow read: if false;
+      allow write: if false;
     }
-    
-    /* ===== BACKUP AND EXPORT STORAGE ===== */
-    
-    // SECURITY FIX: User data backups and exports - user or admin only
+
+    // ==== BACKUP AND EXPORT STORAGE ====
     match /backups/{userId}/{allPaths=**} {
-      // isOwner(userId) logic: signedIn && request.auth.uid == userId;
-
-      // allow read: if isOwner(userId) || isAdmin();
-      allow read: if (signedIn && request.auth.uid == userId) || isAdminCheck;
-
-      // allow write: if isAdmin() && validFileSize(100) && validDocumentType();
-      allow write: if isAdminCheck 
-        && request.resource.size <= 100 * 1024 * 1024 
-        && validDocumentTypeCheck;
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
     }
-    
-    /* ===== FIXED: SECURE DEFAULT - ADMIN-ONLY FALLBACK INSTEAD OF DENY-ALL ===== */
-    
-    // FIXED: Replaced dangerous catch-all deny with secure admin-only fallback
+
+    // ==== SECURE DEFAULT - ADMIN-ONLY FALLBACK ====
     match /{allPaths=**} {
-      // allow read: if isAdmin();
-      allow read: if isAdminCheck;
-
-      // allow write: if isAdmin() && validFileSize(50) && validDocumentType();
-      allow write: if isAdminCheck 
-        && request.resource.size <= 50 * 1024 * 1024 
-        && validDocumentTypeCheck;
+      allow read: if false;
+      allow write: if false;
     }
-  } // <-- End of 'match /b/{bucket}/o' block
-} // <-- End of 'service firebase.storage' block
+  }
+}
