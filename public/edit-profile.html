@@ -1,12 +1,169 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Edit Profile</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Profile - Unhinged</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body {background:#0e0e12;color:#fff;font-family:system-ui,Arial,sans-serif;min-height:100vh;padding:20px;}
+    .edit-container{max-width:600px;margin:0 auto;background:#15161b;padding:30px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+    .form-group{margin-bottom:20px;}
+    .form-group label{display:block;margin-bottom:8px;color:#cfd0de;font-weight:600;}
+    .form-group input,.form-group textarea{width:100%;padding:12px;background:#0e0e12;border:1px solid #444;border-radius:8px;color:#fff;font-size:16px;}
+    .form-group input:focus,.form-group textarea:focus{outline:none;border-color:#E11D2A;}
+    .btn{border:none;background:#E11D2A;color:#fff;padding:12px 24px;border-radius:8px;cursor:pointer;font-size:16px;font-weight:600;margin-right:10px;}
+    .btn:hover{background:#c41e2a;}
+    .btn.secondary{background:#3a3a3a;}
+    .btn.secondary:hover{background:#4a4a4a;}
+    .gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-top:10px;}
+    .thumb{cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;aspect-ratio:1;}
+    .thumb:hover{border-color:#E11D2A;}
+    .thumb img{width:100%;height:100%;object-fit:cover;}
+    .required{color:#E11D2A;}
+    h1{text-align:center;margin-bottom:30px;color:#fff;}
+    .buttons{text-align:center;margin-top:30px;}
+    .status{margin-top:12px;font-size:.95rem;}
+    .status.ok{color:#9ae6b4;}
+    .status.err{color:#ff8e8e;}
+  </style>
 </head>
 <body>
-    <script>
-        // Updated line
-        const ref = sRef(storage, `profilePhotos/${user.uid}/${name}`);
-    </script>
+  <div class="edit-container">
+    <h1>Complete Your Profile</h1>
+
+    <div class="form-group">
+      <label for="displayName">Display Name <span class="required">*</span></label>
+      <input type="text" id="displayName" placeholder="Enter your display name">
+    </div>
+
+    <div class="form-group">
+      <label for="age">Age <span class="required">*</span></label>
+      <input type="number" id="age" min="18" max="100" placeholder="Enter your age">
+    </div>
+
+    <div class="form-group">
+      <label for="location">State <span class="required">*</span></label>
+      <input type="text" id="location" placeholder="Enter your state (e.g. California)">
+    </div>
+
+    <div class="form-group">
+      <label for="avatar">Photos <span class="required">*</span></label>
+      <input type="file" id="avatar" multiple accept="image/*">
+      <button id="uploadBtn" class="btn secondary" type="button">Upload Selected Photos</button>
+      <div id="gallery" class="gallery"></div>
+      <div id="uploadStatus" class="status"></div>
+    </div>
+
+    <div class="buttons">
+      <button id="saveEdit" class="btn">Save Profile</button>
+      <button id="logoutBtn" class="btn secondary">Logout</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      auth, db, onAuthStateChanged,
+      doc, getDoc, setDoc, serverTimestamp, signOut
+    } from "./js/firebase.js";
+
+    import {
+      getStorage, ref, uploadBytes, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+    const storage = getStorage();
+    const statusBox = document.getElementById("uploadStatus");
+
+    // Upload handler
+    document.getElementById("uploadBtn")?.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        statusBox.textContent = "❌ Please log in first.";
+        statusBox.className = "status err";
+        return;
+      }
+
+      const files = Array.from(document.getElementById("avatar").files || []);
+      if (!files.length) {
+        statusBox.textContent = "❌ Select at least one photo.";
+        statusBox.className = "status err";
+        return;
+      }
+
+      const urls = [];
+      for (const file of files) {
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`⚠️ ${file.name} is too large (max 10MB)`);
+          continue;
+        }
+        const filename = `${Date.now()}_${file.name.replace(/\s+/g,"_")}`;
+        const photoRef = ref(storage, `profilePhotos/${user.uid}/${filename}`);
+        try {
+          await uploadBytes(photoRef, file);
+          const url = await getDownloadURL(photoRef);
+          urls.push(url);
+        } catch (err) {
+          statusBox.textContent = `❌ Upload failed: ${err.message}`;
+          statusBox.className = "status err";
+          return;
+        }
+      }
+
+      if (urls.length) {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        const data = snap.exists() ? snap.data() : {};
+        const all = [...(data.photos || []), ...urls];
+        await setDoc(doc(db, "users", user.uid), {
+          photos: all,
+          hasPhotos: true,
+          primaryPhoto: data.primaryPhoto || all[0],
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        statusBox.textContent = "✅ Uploaded successfully.";
+        statusBox.className = "status ok";
+        loadPhotos(all);
+      }
+    });
+
+    // Render gallery
+    function loadPhotos(photos) {
+      const gallery = document.getElementById("gallery");
+      gallery.innerHTML = "";
+      (photos || []).forEach(url => {
+        const div = document.createElement("div");
+        div.className = "thumb";
+        div.innerHTML = `<img src="${url}" alt="photo">`;
+        gallery.appendChild(div);
+      });
+    }
+
+    // Save profile
+    document.getElementById("saveEdit")?.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      const displayName = document.getElementById("displayName").value.trim();
+      const age = parseInt(document.getElementById("age").value, 10);
+      const location = document.getElementById("location").value.trim();
+      const snap = await getDoc(doc(db,"users",user.uid));
+      const data = snap.exists() ? snap.data() : {};
+      if (!displayName || !age || !location || !(data.photos?.length)) {
+        alert("⚠️ Please complete Display Name, Age, State, and upload at least one photo.");
+        return;
+      }
+      await setDoc(doc(db,"users",user.uid),{
+        displayName, age, location, updatedAt: serverTimestamp()
+      },{merge:true});
+      window.location.href="/profile.html";
+    });
+
+    // Logout
+    document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "/login.html";
+    });
+
+    // Ensure auth
+    onAuthStateChanged(auth, (u)=>{ if (!u) window.location.href="/login.html"; });
+  </script>
 </body>
 </html>
