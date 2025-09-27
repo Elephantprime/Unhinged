@@ -22,8 +22,14 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
     .form-group { margin-bottom: 20px; }
-    .form-group label { display: block; margin-bottom: 8px; color: var(--muted, #cfd0de); font-weight: 600; }
-    .form-group input, .form-group textarea {
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted, #cfd0de);
+      font-weight: 600;
+    }
+    .form-group input,
+    .form-group textarea {
       width: 100%;
       padding: 12px;
       background: var(--bg, #0e0e12);
@@ -32,27 +38,51 @@
       color: #fff;
       font-size: 16px;
     }
-    .form-group input:focus, .form-group textarea:focus {
-      outline: none; border-color: var(--red, #E11D2A);
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--red, #E11D2A);
     }
     .btn {
-      border: none; background: var(--red, #E11D2A);
-      color: #fff; padding: 12px 24px; border-radius: 8px;
-      cursor: pointer; font-size: 16px; font-weight: 600; margin-right: 10px;
+      border: none;
+      background: var(--red, #E11D2A);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      margin-right: 10px;
+      transition: background 0.2s;
     }
     .btn:hover { background: #c41e2a; }
     .btn.secondary { background: #3a3a3a; }
     .btn.secondary:hover { background: #4a4a4a; }
     .gallery {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 10px; margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
     }
-    .thumb { cursor: pointer; border: 2px solid transparent; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
+    .thumb {
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      overflow: hidden;
+      aspect-ratio: 1;
+    }
     .thumb:hover { border-color: var(--red, #E11D2A); }
-    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
     .required { color: var(--red, #E11D2A); }
     h1 { text-align: center; margin-bottom: 30px; color: #fff; }
     .buttons { text-align: center; margin-top: 30px; }
+    .status { margin-top: 8px; font-size: 0.9rem; }
+    .status .ok { color: #9ae6b4; }
+    .status .err { color: #ff8e8e; }
   </style>
 </head>
 <body>
@@ -94,9 +124,12 @@
       <textarea id="bio" rows="4" placeholder="Tell others about yourself..."></textarea>
     </div>
 
+    <!-- Upload button -->
     <div class="form-group">
-      <label for="avatar">Photos (Optional)</label>
+      <label for="avatar">Profile Photos <span class="required">*</span></label>
       <input type="file" id="avatar" multiple accept="image/*">
+      <button id="uploadBtn" class="btn secondary" type="button">Upload Selected Photos</button>
+      <div id="uploadStatus" class="status"></div>
       <div id="gallery" class="gallery"></div>
     </div>
 
@@ -113,26 +146,80 @@
       sRef, uploadBytes, getDownloadURL, signOut
     } from "./js/firebase.js";
 
-    // Helper: validate profile (no photo required now)
     function isComplete(data) {
       const hasName = !!(data?.displayName && String(data.displayName).trim());
       const ageNum = Number(data?.age);
       const hasAge = Number.isFinite(ageNum) && ageNum >= 18 && ageNum <= 100;
       const hasState = !!(data?.location && String(data.location).trim());
-      return hasName && hasAge && hasState;
+      const hasPhotos = Array.isArray(data?.photos) && data.photos.length > 0;
+      return hasName && hasAge && hasState && hasPhotos;
     }
 
-    // Logout
     document.getElementById("logoutBtn")?.addEventListener("click", async () => {
       try { await signOut(auth); } catch {}
       window.location.href = "/login.html";
     });
 
-    // Save profile
-    async function saveProfile() {
+    // Upload button handler
+    document.getElementById("uploadBtn")?.addEventListener("click", async () => {
+      const statusBox = document.getElementById("uploadStatus");
+      const user = auth.currentUser;
+      if (!user) {
+        statusBox.innerHTML = "<span class='err'>⚠️ Please log in first.</span>";
+        return;
+      }
+      const files = Array.from(document.getElementById("avatar").files || []);
+      if (!files.length) {
+        statusBox.innerHTML = "<span class='err'>⚠️ Select at least one photo.</span>";
+        return;
+      }
+      const urls = [];
+      for (const f of files) {
+        if (f.size > 10 * 1024 * 1024) {
+          alert(`⚠️ ${f.name} is too large (max 10MB)`);
+          continue;
+        }
+        const name = `${Date.now()}_${f.name.replace(/\s+/g, "_")}`;
+        const ref = sRef(storage, `profilePhotos/${user.uid}/${name}`);
+        try {
+          await uploadBytes(ref, f);
+          urls.push(await getDownloadURL(ref));
+        } catch (err) {
+          statusBox.innerHTML = `<span class='err'>❌ Upload failed: ${err.message}</span>`;
+          return;
+        }
+      }
+      if (urls.length) {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        const data = snap.exists() ? snap.data() : {};
+        const all = [...(data.photos || []), ...urls];
+        await setDoc(doc(db, "users", user.uid), {
+          photos: all,
+          hasPhotos: true,
+          primaryPhoto: data.primaryPhoto || all[0],
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        statusBox.innerHTML = "<span class='ok'>✅ Uploaded successfully</span>";
+        renderGallery(all);
+      }
+    });
+
+    function renderGallery(urls) {
+      const gallery = document.getElementById("gallery");
+      if (!gallery) return;
+      gallery.innerHTML = "";
+      urls.forEach(url => {
+        const div = document.createElement("div");
+        div.className = "thumb";
+        div.innerHTML = `<img src="${url}" alt="profile photo">`;
+        gallery.appendChild(div);
+      });
+    }
+
+    // Save Profile
+    document.getElementById("saveEdit")?.addEventListener("click", async () => {
       const user = auth.currentUser;
       if (!user) return;
-
       const displayName = document.getElementById("displayName")?.value?.trim() || "";
       const age = Number(document.getElementById("age")?.value || 0);
       const locationState = document.getElementById("location")?.value?.trim() || "";
@@ -140,73 +227,30 @@
       const hobbies = document.getElementById("hobbies")?.value?.trim() || null;
       const interests = document.getElementById("interests")?.value?.trim() || null;
       const bio = document.getElementById("bio")?.value?.trim() || null;
-
-      if (!displayName || !Number.isFinite(age) || age < 18 || age > 100 || !locationState) {
-        alert("⚠️ Please complete Display Name, Age (18–100), and State.");
-        return;
-      }
-
-      const currentSnap = await getDoc(doc(db, "users", user.uid));
-      const currentData = currentSnap.exists() ? currentSnap.data() : {};
-      const existingPhotos = Array.isArray(currentData.photos) ? currentData.photos.slice() : [];
-
-      const fileInput = document.getElementById("avatar");
-      const files = (fileInput && fileInput.files) ? Array.from(fileInput.files) : [];
-      const newPhotoUrls = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (file.size > 10 * 1024 * 1024) {
-          alert(`Image "${file.name}" is over 10MB. Please choose a smaller file.`);
-          continue;
-        }
-        const filename = `${Date.now()}_${i}_${file.name.replace(/\s+/g, "_")}`;
-        const ref = sRef(storage, `profilePhotos/${user.uid}/${filename}`);
-        await uploadBytes(ref, file);
-        const url = await getDownloadURL(ref);
-        newPhotoUrls.push(url);
-      }
-
-      const allPhotos = existingPhotos.concat(newPhotoUrls);
-      const primaryPhoto = currentData.primaryPhoto || allPhotos[0] || null;
-
+      const snap = await getDoc(doc(db, "users", user.uid));
+      const currentData = snap.exists() ? snap.data() : {};
+      const allPhotos = currentData.photos || [];
       const payload = {
         uid: user.uid,
         displayName,
-        username: username || null,
+        username,
         age,
         location: locationState,
-        hobbies: hobbies || null,
-        interests: interests || null,
-        bio: bio || null,
+        hobbies,
+        interests,
+        bio,
         photos: allPhotos,
         hasPhotos: allPhotos.length > 0,
-        primaryPhoto,
+        primaryPhoto: currentData.primaryPhoto || allPhotos[0] || null,
         updatedAt: serverTimestamp()
       };
-
       await setDoc(doc(db, "users", user.uid), payload, { merge: true });
-
       const afterSnap = await getDoc(doc(db, "users", user.uid));
-      const afterData = afterSnap.exists() ? afterSnap.data() : {};
-      if (!isComplete(afterData)) {
-        alert("⚠️ Please ensure you have Display Name, valid Age (18–100), and State.");
+      if (!isComplete(afterSnap.data())) {
+        alert("⚠️ Please complete all required fields and upload at least one photo.");
         return;
       }
-
       window.location.href = "/profile.html";
-    }
-
-    document.getElementById("saveEdit")?.addEventListener("click", saveProfile);
-
-    // Primary photo quick set
-    document.getElementById("gallery")?.addEventListener("click", async (e) => {
-      const user = auth.currentUser;
-      if (!user) return;
-      const thumb = e.target.closest(".thumb");
-      if (!thumb) return;
-      const img = thumb.querySelector("img");
-      if (!img?.src) return;
-      await setDoc(doc(db, "users", user.uid), { primaryPhoto: img.src }, { merge: true });
     });
 
     onAuthStateChanged(auth, (u) => {
