@@ -194,6 +194,27 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+<!-- Hidden Chaos Access Button -->
+<button id="chaosButton"
+  style="display:none;position:fixed;bottom:10px;right:10px;
+         background:#111;color:#e11d2a;border:1px solid #e11d2a;
+         border-radius:8px;padding:8px 14px;z-index:999;">
+  🔥 Chaos Profile
+</button>
+
+<script>
+  // 🔒 Only show to you (admin)
+  firebase.auth().onAuthStateChanged(user => {
+    // Replace with your actual admin UID from Firebase Auth
+    if (user && user.uid === "YOUR_ADMIN_UID_HERE") {
+      const btn = document.getElementById("chaosButton");
+      btn.style.display = "block";
+      btn.onclick = () => {
+        window.location.href = "/chaos/profile.html";
+      };
+    }
+  });
+</script>
 
 // Initialize
 loadChaosPosts();
